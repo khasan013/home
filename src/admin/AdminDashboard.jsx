@@ -177,28 +177,62 @@ export default function AdminDashboard() {
     return { perEgg, consumedCost, remainingEggCost, totalBill };
   })();
 
-  // ── Send bill ─────────────────────────────────────────
-  const doSendBill = useCallback(async (auto = false) => {
-    if (!billCalc) return;
-    setBusy('bill');
-    try {
-      const month  = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-      const result = await adminApi.sendBill(homeId, { ...costForm, month });
-      toast$(auto ? `Auto-bill sent for ${month}` : result.message);
-      if (auto) localStorage.setItem(autoBillKey(homeId), '1');
-    } catch (err) {
-      toast$(err.message, 'error');
-    } finally {
-      setBusy('');
+ // ── Send bill ─────────────────────────────────────────
+const doSendBill = useCallback(async (auto = false) => {
+  if (!billCalc) return;
+
+  setBusy('bill');
+
+  try {
+    const month = new Date().toLocaleDateString('en-US', {
+      month: 'long',
+      year: 'numeric',
+    });
+
+    // ✅ CALCULATE TOTAL MEALS (VERY IMPORTANT)
+    const totalMeals = meals
+      .filter(m => !m.isPenalty)
+      .reduce((s, m) => s + (m.mealCount || 0), 0);
+
+    if (!totalMeals) {
+      return toast$('No meals found for this month', 'error');
     }
-  }, [billCalc, costForm, homeId]);
 
-  const handleSendBill = async (e) => {
-    e.preventDefault();
-    if (!billCalc) return toast$('Enter egg price and count first', 'error');
-    doSendBill(false);
-  };
+    // ✅ SEND FULL DATA TO BACKEND
+    const result = await adminApi.sendBill(homeId, {
+      ...costForm,
 
+      totalMeals,                    // 🔥 needed for perMeal
+      totalBill: billCalc.totalBill, // 🔥 correct total (remainingEgg + other)
+      perEgg: billCalc.perEgg,       // 🔥 egg cost per piece
+
+      month,
+    });
+
+    toast$(auto ? `Auto-bill sent for ${month}` : result.message);
+
+    if (auto) {
+      localStorage.setItem(autoBillKey(homeId), '1');
+    }
+
+  } catch (err) {
+    toast$(err.message, 'error');
+  } finally {
+    setBusy('');
+  }
+}, [billCalc, costForm, homeId, meals]); // ✅ add meals dependency
+
+
+
+const handleSendBill = async (e) => {
+  e.preventDefault();
+
+  if (!billCalc) {
+    return toast$('Enter egg price and count first', 'error');
+  }
+
+  doSendBill(false);
+};
   // ── Monthly auto-bill scheduler ───────────────────────
   useEffect(() => {
     if (!homeId || autoBillFiredRef.current) return;
