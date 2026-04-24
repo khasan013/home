@@ -185,7 +185,7 @@ const bill = calculateBill();
     (sum, p) => sum + (p.amount || 0),
     0
   );
-}
+
 
  return (
   <div className="p-6 text-white">
@@ -327,3 +327,4 @@ const bill = calculateBill();
 
   </div>
 );
+}
