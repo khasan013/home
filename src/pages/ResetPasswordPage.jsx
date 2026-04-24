@@ -5,10 +5,14 @@ export default function ResetPasswordPage({ email, onDone }) {
   const [otp, setOtp] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
+    setLoading(true);
 
     try {
       await authApi.resetPassword({
@@ -17,38 +21,82 @@ export default function ResetPasswordPage({ email, onDone }) {
         newPassword: password,
       });
 
-      alert('Password reset successful');
-      onDone();
+      setSuccess('Password reset successful');
+
+      setTimeout(() => {
+        onDone(); // your original logic
+      }, 1200);
 
     } catch (err) {
       setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="center">
-      <form onSubmit={handleSubmit}>
-        <h2>Reset Password</h2>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-white/20">
 
-        <input
-          placeholder="OTP"
-          value={otp}
-          onChange={e => setOtp(e.target.value)}
-          required
-        />
+          <h1 className="text-3xl font-bold text-white mb-2">
+            Reset Password
+          </h1>
 
-        <input
-          type="password"
-          placeholder="New Password"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          required
-        />
+          <p className="text-gray-300 mb-6 text-sm">
+            Enter OTP sent to{' '}
+            <span className="text-purple-400 font-semibold">{email}</span>
+          </p>
 
-        {error && <p className="text-red-400">{error}</p>}
+          <form onSubmit={handleSubmit} className="space-y-4">
 
-        <button type="submit">Reset Password</button>
-      </form>
+            {/* OTP */}
+            <input
+              type="text"
+              maxLength="6"
+              placeholder="Enter OTP"
+              value={otp}
+              onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+              className="w-full text-center text-xl tracking-widest px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition"
+              required
+            />
+
+            {/* Password */}
+            <input
+              type="password"
+              placeholder="New Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 transition"
+              required
+            />
+
+            {/* Error */}
+            {error && (
+              <div className="p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 text-sm">
+                {error}
+              </div>
+            )}
+
+            {/* Success */}
+            {success && (
+              <div className="p-3 bg-green-500/20 border border-green-500/50 rounded-lg text-green-200 text-sm">
+                {success}
+              </div>
+            )}
+
+            {/* Button */}
+            <button
+              type="submit"
+              disabled={loading || otp.length !== 6}
+              className="w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-lg hover:from-purple-600 hover:to-pink-600 transition transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Resetting...' : 'Reset Password'}
+            </button>
+
+          </form>
+        </div>
+      </div>
     </div>
   );
 }

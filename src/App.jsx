@@ -8,6 +8,7 @@ import OTPVerificationPage   from './pages/OTPVerificationPage';
 import MainApp               from './components/MainApp';
 import AdminDashboard        from './admin/AdminDashboard';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 
 // ── Mobile-aware Navigation ────────────────────────────────
 function TopNav({ screen, setScreen, isMobileMenuOpen, setIsMobileMenuOpen }) {
@@ -258,6 +259,14 @@ function AppRouter() {
       />
     );
   }
+  if (screen === 'reset') {
+  return (
+    <ResetPasswordPage
+      email={resetEmail}
+      onDone={() => setScreen('login')}
+    />
+    );
+  }
 
   if (screen === 'otp') {
     return (
@@ -266,12 +275,12 @@ function AppRouter() {
       />
     );
   }
-  if (screen === 'forgot') {
+if (screen === 'forgot') {
   return (
     <ForgotPasswordPage
       onNext={(email) => {
         setResetEmail(email);
-        setScreen('login'); // or 'reset' if you use reset page
+        setScreen('reset'); // ✅ FIXED
       }}
       onBack={() => setScreen('login')}
     />
