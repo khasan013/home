@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import {
-  Trash2, User, PlusCircle, Mail
+  Trash2, User, PlusCircle, Mail, Pencil
 } from 'lucide-react';
 
 import { useHome } from '../context/HomeContext';
-import { adminApi } from '../api';
+import { adminApi, mealApi } from '../api';
 
 export default function AdminDashboard() {
   const { currentHome } = useHome();
@@ -12,9 +12,9 @@ export default function AdminDashboard() {
 
   const [members, setMembers] = useState([]);
   const [penalties, setPenalties] = useState([]);
+  const [meals, setMeals] = useState([]);
   const [loadingAction, setLoadingAction] = useState('');
 
-  // ✅ UPDATED penalty state (ONLY 3 fields)
   const [penaltyData, setPenaltyData] = useState({
     userId: '',
     meals: '',
@@ -33,9 +33,11 @@ export default function AdminDashboard() {
     try {
       const m = await adminApi.getMembers(homeId);
       const p = await adminApi.getPenalties(homeId);
+      const mealData = await mealApi.getAll(homeId);
 
       setMembers(m);
       setPenalties(p);
+      setMeals(mealData);
     } catch (err) {
       console.error(err);
     }
@@ -45,38 +47,24 @@ export default function AdminDashboard() {
   // MEMBER ACTIONS
   // ─────────────────────────────
   const handlePromote = async (userId) => {
-    setLoadingAction(userId);
-    try {
-      const updated = await adminApi.promoteUser(homeId, userId);
+    const updated = await adminApi.promoteUser(homeId, userId);
 
-      setMembers(prev =>
-        prev.map(m =>
-          m.user?._id === userId ? { ...m, role: updated.role } : m
-        )
-      );
-    } catch (err) {
-      alert(err.message);
-    } finally {
-      setLoadingAction('');
-    }
+    setMembers(prev =>
+      prev.map(m =>
+        m.user?._id === userId ? { ...m, role: updated.role } : m
+      )
+    );
   };
 
   const handleRemove = async (userId) => {
     if (!confirm('Remove this member?')) return;
 
-    setLoadingAction(userId);
-    try {
-      await adminApi.removeUser(homeId, userId);
-      setMembers(prev => prev.filter(m => m.user?._id !== userId));
-    } catch (err) {
-      alert(err.message);
-    } finally {
-      setLoadingAction('');
-    }
+    await adminApi.removeUser(homeId, userId);
+    setMembers(prev => prev.filter(m => m.user?._id !== userId));
   };
 
   // ─────────────────────────────
-  // PENALTY → ADD MEALS DIRECTLY 🔥
+  // PENALTY SYSTEM
   // ─────────────────────────────
   const handlePenaltySubmit = async (e) => {
     e.preventDefault();
@@ -88,27 +76,35 @@ export default function AdminDashboard() {
     }
 
     try {
-      // ✅ 1. ADD MEAL (IMPORTANT)
+      // 1. add meals
       await adminApi.addMealPenalty(homeId, {
         userId,
         meals: Number(meals),
       });
 
-      // ✅ 2. SAVE PENALTY RECORD
+      // 2. save penalty
       const newPenalty = await adminApi.addPenalty(homeId, {
         userId,
         amount: Number(meals),
         reason: reason || `Penalty for ${meals} meals`,
       });
 
+      // 3. send email 🔥
+      await adminApi.sendPenaltyEmail({
+        userId,
+        meals,
+        reason,
+      });
+
       setPenalties(prev => [newPenalty, ...prev]);
 
-      // reset form
       setPenaltyData({
         userId: '',
         meals: '',
         reason: '',
       });
+
+      loadData(); // refresh meals
 
     } catch (err) {
       alert(err.message);
@@ -116,15 +112,44 @@ export default function AdminDashboard() {
   };
 
   // ─────────────────────────────
-  // SEND BILL
+  // MEAL MANAGEMENT
+  // ─────────────────────────────
+  const handleDeleteMeal = async (mealId) => {
+    if (!confirm('Delete this meal?')) return;
+
+    await mealApi.remove(homeId, mealId);
+    setMeals(prev => prev.filter(m => m._id !== mealId));
+  };
+
+  const handleEditMeal = async (meal) => {
+    const newMeal = prompt('Update meal count', meal.mealCount);
+    if (newMeal === null) return;
+
+    const updated = await mealApi.update(homeId, meal._id, {
+      mealCount: Number(newMeal),
+    });
+
+    setMeals(prev =>
+      prev.map(m => (m._id === meal._id ? updated : m))
+    );
+  };
+
+  // ─────────────────────────────
+  // BILL SYSTEM
   // ─────────────────────────────
   const handleSendBill = async () => {
-    try {
-      await adminApi.sendBill(homeId);
-      alert('📧 Bills sent successfully!');
-    } catch (err) {
-      alert(err.message);
-    }
+    await adminApi.sendBill(homeId);
+    alert('📧 Bills sent!');
+  };
+
+  const handleDownloadPDF = async () => {
+    const blob = await adminApi.downloadBill(homeId);
+
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'monthly_bill.pdf';
+    a.click();
   };
 
   // ─────────────────────────────
@@ -145,29 +170,31 @@ export default function AdminDashboard() {
 
         <div className="bg-gray-800 p-4 rounded">
           <p>Total Members</p>
-          <h2 className="text-xl font-bold">{members.length}</h2>
+          <h2>{members.length}</h2>
         </div>
 
         <div className="bg-gray-800 p-4 rounded">
           <p>Total Penalty</p>
-          <h2 className="text-xl font-bold">৳{totalPenalty}</h2>
+          <h2>৳{totalPenalty}</h2>
         </div>
 
         <div className="bg-gray-800 p-4 rounded">
-          <p>Penalties Count</p>
-          <h2 className="text-xl font-bold">{penalties.length}</h2>
+          <p>Penalties</p>
+          <h2>{penalties.length}</h2>
         </div>
 
       </div>
 
-      {/* SEND BILL */}
-      <button
-        onClick={handleSendBill}
-        className="flex items-center gap-2 px-4 py-2 bg-green-500 rounded mb-6"
-      >
-        <Mail size={16} />
-        Send Bills Now
-      </button>
+      {/* BILL BUTTONS */}
+      <div className="flex gap-3 mb-6">
+        <button onClick={handleSendBill} className="bg-green-500 px-4 py-2 rounded flex items-center gap-2">
+          <Mail size={16} /> Send Bills
+        </button>
+
+        <button onClick={handleDownloadPDF} className="bg-blue-500 px-4 py-2 rounded">
+          Download PDF
+        </button>
+      </div>
 
       {/* MEMBERS */}
       <div className="mb-8">
@@ -175,7 +202,7 @@ export default function AdminDashboard() {
 
         <table className="w-full">
           <thead>
-            <tr className="text-left text-gray-400">
+            <tr className="text-gray-400">
               <th>Name</th>
               <th>Email</th>
               <th>Role</th>
@@ -185,22 +212,19 @@ export default function AdminDashboard() {
 
           <tbody>
             {members.map(m => (
-              <tr key={m.user?._id} className="border-b border-gray-700">
-
-                <td>{m.user?.firstName || 'Unknown'}</td>
+              <tr key={m.user?._id}>
+                <td>{m.user?.firstName}</td>
                 <td>{m.user?.email}</td>
                 <td>{m.role}</td>
 
-                <td className="flex gap-2 py-2">
-
-                  <button onClick={() => handlePromote(m.user?._id)} className="text-blue-400">
-                    <User size={18} />
+                <td className="flex gap-2">
+                  <button onClick={() => handlePromote(m.user?._id)}>
+                    <User size={16} />
                   </button>
 
-                  <button onClick={() => handleRemove(m.user?._id)} className="text-red-400">
-                    <Trash2 size={18} />
+                  <button onClick={() => handleRemove(m.user?._id)}>
+                    <Trash2 size={16} />
                   </button>
-
                 </td>
               </tr>
             ))}
@@ -208,13 +232,12 @@ export default function AdminDashboard() {
         </table>
       </div>
 
-      {/* PENALTY SYSTEM */}
+      {/* PENALTY */}
       <div className="mb-8">
-        <h2 className="text-xl mb-3">Set Penalty (Meal Based)</h2>
+        <h2 className="text-xl mb-3">Set Penalty</h2>
 
         <form onSubmit={handlePenaltySubmit} className="flex gap-3 flex-wrap">
 
-          {/* USER */}
           <select
             value={penaltyData.userId}
             onChange={(e) =>
@@ -222,7 +245,7 @@ export default function AdminDashboard() {
             }
             className="p-2 bg-gray-800 rounded"
           >
-            <option value="">Select User</option>
+            <option value="">User</option>
             {members.map(m => (
               <option key={m.user?._id} value={m.user?._id}>
                 {m.user?.firstName}
@@ -230,7 +253,6 @@ export default function AdminDashboard() {
             ))}
           </select>
 
-          {/* MEALS */}
           <input
             type="number"
             placeholder="Meals (V)"
@@ -241,7 +263,6 @@ export default function AdminDashboard() {
             className="p-2 bg-gray-800 rounded"
           />
 
-          {/* REASON */}
           <input
             type="text"
             placeholder="Reason"
@@ -252,7 +273,7 @@ export default function AdminDashboard() {
             className="p-2 bg-gray-800 rounded"
           />
 
-          <button type="submit" className="flex items-center gap-2 px-4 bg-purple-500 rounded">
+          <button className="bg-purple-500 px-4 rounded flex items-center gap-2">
             <PlusCircle size={16} />
             Add
           </button>
@@ -260,27 +281,53 @@ export default function AdminDashboard() {
         </form>
       </div>
 
+      {/* MEAL MANAGEMENT */}
+      <div className="mb-8">
+        <h2 className="text-xl mb-3">Manage Meals</h2>
+
+        <table className="w-full">
+          <thead>
+            <tr className="text-gray-400">
+              <th>User</th>
+              <th>Meals</th>
+              <th>Date</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {meals.map(m => (
+              <tr key={m._id}>
+                <td>{m.userId?.firstName}</td>
+                <td>{m.mealCount}</td>
+                <td>{m.date?.split('T')[0]}</td>
+
+                <td className="flex gap-2">
+                  <button onClick={() => handleEditMeal(m)}>
+                    <Pencil size={16} />
+                  </button>
+
+                  <button onClick={() => handleDeleteMeal(m._id)}>
+                    <Trash2 size={16} />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
       {/* PENALTY LIST */}
       <div>
         <h2 className="text-xl mb-3">Penalty List</h2>
 
         <table className="w-full">
-          <thead>
-            <tr className="text-left text-gray-400">
-              <th>User</th>
-              <th>Meals</th>
-              <th>Reason</th>
-            </tr>
-          </thead>
-
           <tbody>
             {penalties.map(p => (
-              <tr key={p._id} className="border-b border-gray-700">
-
-                <td>{p.userId?.firstName || 'Unknown'}</td>
+              <tr key={p._id}>
+                <td>{p.userId?.firstName}</td>
                 <td>{p.amount} V</td>
-                <td>{p.reason || '-'}</td>
-
+                <td>{p.reason}</td>
               </tr>
             ))}
           </tbody>
