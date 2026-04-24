@@ -1,9 +1,11 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom'; // ✅ ADD THIS
 import { useAuth } from '../context/AuthContext';
 import { authApi } from '../api';
 
 export default function LoginPage({ onGoRegister, onForgotPassword }) {
   const { login } = useAuth();
+  const navigate = useNavigate(); // ✅ ADD THIS
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -44,7 +46,7 @@ export default function LoginPage({ onGoRegister, onForgotPassword }) {
               placeholder="Email Address"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 transition"
+              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white"
               required
             />
 
@@ -53,15 +55,15 @@ export default function LoginPage({ onGoRegister, onForgotPassword }) {
               placeholder="Password"
               value={password}
               onChange={e => setPassword(e.target.value)}
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 transition"
+              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white"
               required
             />
 
-            {/* 🔥 NEW: Forgot Password */}
+            {/* 🔥 FIXED: ALWAYS WORKS */}
             <div className="text-right -mt-2">
               <button
                 type="button"
-                onClick={() => onForgotPassword && onForgotPassword(email)}
+                onClick={() => navigate('/forgot-password')} // ✅ DIRECT NAVIGATION
                 className="text-sm text-purple-400 hover:text-purple-300"
               >
                 Forgot Password?
@@ -77,7 +79,7 @@ export default function LoginPage({ onGoRegister, onForgotPassword }) {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-lg hover:from-purple-600 hover:to-pink-600 transition transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg"
             >
               {loading ? 'Logging in...' : 'Login'}
             </button>
@@ -87,7 +89,7 @@ export default function LoginPage({ onGoRegister, onForgotPassword }) {
               <button
                 type="button"
                 onClick={onGoRegister}
-                className="text-purple-400 hover:text-purple-300"
+                className="text-purple-400"
               >
                 Register
               </button>

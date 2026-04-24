@@ -7,6 +7,7 @@ import LoginPage             from './pages/LoginPage';
 import OTPVerificationPage   from './pages/OTPVerificationPage';
 import MainApp               from './components/MainApp';
 import AdminDashboard        from './admin/AdminDashboard';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
 
 // ── Mobile-aware Navigation ────────────────────────────────
 function TopNav({ screen, setScreen, isMobileMenuOpen, setIsMobileMenuOpen }) {
@@ -225,6 +226,7 @@ function AppRouter() {
   const { isAuthenticated } = useAuth();
   const [screen, setScreen] = useState('login');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
 
   // Once authenticated, always show app
   if (isAuthenticated) {
@@ -264,11 +266,27 @@ function AppRouter() {
       />
     );
   }
-
-  // Default: login
+  if (screen === 'forgot') {
   return (
-    <LoginPage onGoRegister={() => setScreen('register')} />
+    <ForgotPasswordPage
+      onNext={(email) => {
+        setResetEmail(email);
+        setScreen('login'); // or 'reset' if you use reset page
+      }}
+      onBack={() => setScreen('login')}
+    />
   );
+}
+
+  return (
+  <LoginPage
+    onGoRegister={() => setScreen('register')}
+    onForgotPassword={(email) => {
+      setResetEmail(email);
+      setScreen('forgot'); // 🔥 THIS FIXES YOUR BUTTON
+    }}
+  />
+);
 }
 
 // ── Root ──────────────────────────────────────────────────
