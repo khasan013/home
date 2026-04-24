@@ -26,24 +26,26 @@ export default function OTPVerificationPage({ onVerified }) {
     setLoading(true);
 
     try {
-      const res = await authApi.verifyOtp({
+      // ✅ FIX: fetch already returns JSON
+      const data = await authApi.verifyOtp({
         email: pendingEmail,
         otp,
       });
 
-      // ✅ FIX: axios response
-      const data = res.data;
+      // ✅ safety check
+      if (!data || !data.token) {
+        throw new Error('Invalid server response');
+      }
 
+      // ✅ login user
       login(data.user, data.token);
 
-      // ✅ safe call
+      // ✅ redirect to login
       if (onVerified) onVerified();
 
     } catch (err) {
       console.log(err);
-      setError(
-        err?.response?.data?.message || err.message || 'Verification failed'
-      );
+      setError(err.message || 'Verification failed');
     } finally {
       setLoading(false);
     }
@@ -59,9 +61,7 @@ export default function OTPVerificationPage({ onVerified }) {
       setTimeout(() => setResent(false), 4000);
 
     } catch (err) {
-      setError(
-        err?.response?.data?.message || err.message || 'Resend failed'
-      );
+      setError(err.message || 'Resend failed');
     }
   };
 
