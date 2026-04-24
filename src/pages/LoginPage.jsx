@@ -1,11 +1,9 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; // ✅ ADD THIS
 import { useAuth } from '../context/AuthContext';
 import { authApi } from '../api';
 
 export default function LoginPage({ onGoRegister, onForgotPassword }) {
   const { login } = useAuth();
-  const navigate = useNavigate(); // ✅ ADD THIS
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -59,11 +57,11 @@ export default function LoginPage({ onGoRegister, onForgotPassword }) {
               required
             />
 
-            {/* 🔥 FIXED: ALWAYS WORKS */}
+            {/* ✅ FIXED: uses your existing routing system */}
             <div className="text-right -mt-2">
               <button
                 type="button"
-                onClick={() => navigate('/forgot-password')} // ✅ DIRECT NAVIGATION
+                onClick={() => onForgotPassword && onForgotPassword(email)}
                 className="text-sm text-purple-400 hover:text-purple-300"
               >
                 Forgot Password?
