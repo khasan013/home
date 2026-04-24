@@ -41,8 +41,28 @@ export const authApi = {
 export const homeApi = {
   create:    (body)       => request('POST', '/home',       body),
   getAll:    ()           => request('GET',  '/home'),
-  join:      (body)       => request('POST', '/home/join',  body),  // { inviteCode }
+  getById:   (homeId)     => request('GET',  `/home/${homeId}`),
+  
+  // ✅ FIX: Proper joinByCode implementation
+  joinByCode: async (inviteCode) => {
+    try {
+      if (!inviteCode || !inviteCode.trim()) {
+        throw new Error('Please enter an invite code');
+      }
+      
+      // Call the backend /home/join endpoint
+      return await request('POST', '/home/join', { 
+        inviteCode: inviteCode.trim().toUpperCase() 
+      });
+    } catch (error) {
+      throw error;
+    }
+  },
+  
   getInvite: (homeId)     => request('GET',  `/home/${homeId}/invite`),
+  
+  // ✅ Additional helper for getting invite code
+  getInviteCode: (homeId) => request('GET', `/home/${homeId}/invite`),
 };
 
 // ── Meals ─────────────────────────────────────────────────
