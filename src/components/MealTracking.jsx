@@ -7,7 +7,7 @@ export default function MealTracking() {
   const { currentHome, meals, setMeals, addMeal } = useHome();
   const homeId = currentHome?._id;
 
-  const isAdmin = currentHome?.role === 'admin'; // ✅ ADMIN CHECK
+  const isAdmin = currentHome?.role === 'admin';
 
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -31,7 +31,12 @@ export default function MealTracking() {
 
   meals.forEach((meal) => {
     const date = meal.date?.split('T')[0];
-    const user = meal.userId?.firstName || 'Unknown';
+
+    // ✅ FIX: safe user name
+    const user =
+      meal.userId?.firstName ||
+      meal.userId?.email ||
+      'Unknown';
 
     usersSet.add(user);
 
@@ -46,12 +51,18 @@ export default function MealTracking() {
 
   const users = Array.from(usersSet);
 
-  // ADD (✅ ALL USERS CAN ADD)
+  // ADD
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-      const meal = await mealApi.add(homeId, formData);
+      const meal = await mealApi.add(homeId, {
+        ...formData,
+        // ✅ FIX: ensure numbers
+        mealCount: Number(formData.mealCount) || 0,
+        eggsCount: Number(formData.eggsCount) || 0,
+      });
+
       addMeal(meal);
 
       setFormData({
@@ -66,10 +77,9 @@ export default function MealTracking() {
     }
   };
 
-  // EDIT (✅ ADMIN ONLY)
+  // EDIT
   const handleEdit = (date, user, value) => {
     if (!isAdmin) return;
-
     setEditing({ date, user });
     setEditValue(value);
   };
@@ -83,8 +93,8 @@ export default function MealTracking() {
 
     try {
       await mealApi.update(homeId, item.mealId, {
-        mealCount: meals,
-        eggsCount: eggs,
+        mealCount: Number(meals) || 0,
+        eggsCount: Number(eggs) || 0,
       });
 
       const updated = await mealApi.getAll(homeId);
@@ -96,13 +106,12 @@ export default function MealTracking() {
     }
   };
 
-  // DELETE (✅ ADMIN ONLY)
+  // DELETE
   const handleDelete = async (mealId) => {
     if (!confirm('Delete this meal?')) return;
 
     try {
       await mealApi.remove(homeId, mealId);
-
       const updated = await mealApi.getAll(homeId);
       setMeals(updated);
     } catch (err) {
@@ -131,7 +140,6 @@ export default function MealTracking() {
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold text-white">Meal Table</h3>
 
-        {/* ✅ EVERYONE CAN ADD */}
         <button
           onClick={() => setShowForm(!showForm)}
           className="flex items-center gap-2 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg"
@@ -158,6 +166,7 @@ export default function MealTracking() {
               required
             />
 
+            {/* ✅ FIX: NO NaN */}
             <input
               type="number"
               step="0.25"
@@ -166,12 +175,13 @@ export default function MealTracking() {
               onChange={(e) =>
                 setFormData({
                   ...formData,
-                  mealCount: parseFloat(e.target.value),
+                  mealCount: e.target.value === '' ? 0 : Number(e.target.value),
                 })
               }
               className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white"
             />
 
+            {/* ✅ FIX: NO NaN */}
             <input
               type="number"
               min="0"
@@ -179,7 +189,7 @@ export default function MealTracking() {
               onChange={(e) =>
                 setFormData({
                   ...formData,
-                  eggsCount: parseInt(e.target.value),
+                  eggsCount: e.target.value === '' ? 0 : Number(e.target.value),
                 })
               }
               className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white"
@@ -227,9 +237,7 @@ export default function MealTracking() {
                   return (
                     <td
                       key={u}
-                      className={`p-3 text-center ${
-                        isAdmin ? 'cursor-pointer hover:bg-white/10' : ''
-                      }`}
+                      className={`p-3 text-center ${isAdmin ? 'cursor-pointer hover:bg-white/10' : ''}`}
                       onClick={() => handleEdit(date, u, display)}
                     >
                       {isEditing ? (
@@ -248,7 +256,6 @@ export default function MealTracking() {
 
                           <span>{display || '0'}</span>
 
-                          {/* ✅ DELETE ONLY ADMIN */}
                           {isAdmin && cell && (
                             <button
                               onClick={(e) => {
