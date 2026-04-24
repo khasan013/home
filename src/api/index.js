@@ -11,6 +11,7 @@ export const getToken = () => localStorage.getItem('token');
 export const setToken = (token) => localStorage.setItem('token', token);
 export const clearToken = () => localStorage.removeItem('token');
 
+
 // ── Core fetch wrapper ────────────────────────────────────
 async function request(method, path, body = null, auth = true) {
   const headers = {
@@ -47,7 +48,6 @@ async function request(method, path, body = null, auth = true) {
 
   return data;
 }
-
 // ── Auth ──────────────────────────────────────────────────
 export const authApi = {
   register: (body) =>
@@ -61,6 +61,14 @@ export const authApi = {
 
   resendOtp: (body) =>
     request('POST', '/auth/resend-otp', body, false),
+
+  // 🔥 NEW: Forgot Password
+  forgotPassword: (body) =>
+    request('POST', '/auth/forgot-password', body, false),
+
+  // 🔥 NEW: Reset Password
+  resetPassword: (body) =>
+    request('POST', '/auth/reset-password', body, false),
 };
 
 // ── Homes ─────────────────────────────────────────────────
