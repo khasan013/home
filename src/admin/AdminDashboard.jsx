@@ -134,20 +134,27 @@ export default function AdminDashboard() {
   useEffect(() => { load(); }, [load]);
 
   // ── Auto-fill egg stats from expense context ──────────
-  useEffect(() => {
-    if (!expenses || expenses.length === 0) return;
+ useEffect(() => {
+  if (!expenses || expenses.length === 0) return;
 
-    // Sum all "Egg" category expenses for this home
-    const eggExpenses    = expenses.filter(e => e.category === 'Egg');
-    const totalEggPrice  = eggExpenses.reduce((s, e) => s + e.amount, 0);
-    const totalEggCount  = eggExpenses.reduce((s, e) => s + (e.eggQty || 0), 0);
+  // 🥚 Egg expenses
+  const eggExpenses   = expenses.filter(e => e.category === 'Egg');
+  const totalEggPrice = eggExpenses.reduce((s, e) => s + e.amount, 0);
+  const totalEggCount = eggExpenses.reduce((s, e) => s + (e.eggQty || 0), 0);
 
-    setCostForm(prev => ({
-      ...prev,
-      totalEggPrice: totalEggPrice > 0 ? String(totalEggPrice) : prev.totalEggPrice,
-      totalEggCount: totalEggCount > 0 ? String(totalEggCount) : prev.totalEggCount,
-    }));
-  }, [expenses]);
+  // 🛒 Grocery expenses
+  const groceryTotal = expenses
+    .filter(e => e.category === 'Grocery')
+    .reduce((s, e) => s + e.amount, 0);
+
+  setCostForm(prev => ({
+    ...prev,
+    totalEggPrice: totalEggPrice > 0 ? String(totalEggPrice) : prev.totalEggPrice,
+    totalEggCount: totalEggCount > 0 ? String(totalEggCount) : prev.totalEggCount,
+    otherCost: groceryTotal > 0 ? String(groceryTotal) : prev.otherCost, // ✅ ADD THIS
+  }));
+
+}, [expenses]);
 
   // ── Auto-fill consumedEgg from meal records ───────────
   useEffect(() => {
