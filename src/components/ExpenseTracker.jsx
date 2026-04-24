@@ -1,40 +1,50 @@
 // src/components/ExpenseTracker.jsx
-import { useState, useEffect } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+// Only two expense categories: Grocery and Egg.
+// When "Egg" is selected the user also enters the egg quantity,
+// which gets stored and later used to auto-fill the Admin bill form.
+
+import { useState } from 'react';
+import { Trash2, PlusCircle } from 'lucide-react';
 import { useHome } from '../context/HomeContext';
 import { expenseApi } from '../api';
 
+const CATEGORIES = ['Grocery', 'Egg'];
+
 export default function ExpenseTracker() {
-  const { currentHome, expenses, setExpenses, addExpense, removeExpense } = useHome();
+  const { currentHome, expenses, setExpenses } = useHome();
   const homeId = currentHome?._id;
 
-  const [showForm, setShowForm] = useState(false);
-  const [loading,  setLoading]  = useState(false);
-  const [error,    setError]    = useState('');
-  const [formData, setFormData] = useState({
-    title: '', amount: 0,
-    category: 'groceries',
-    date: new Date().toISOString().split('T')[0],
+  const [form, setForm] = useState({
+    title:    '',
+    amount:   '',
+    category: 'Grocery',
+    eggQty:   '',          // only used when category === 'Egg'
   });
+  const [busy, setBusy] = useState(false);
+  const [err,  setErr]  = useState('');
 
-  useEffect(() => {
-    if (!homeId) return;
-    expenseApi.getAll(homeId).then(setExpenses).catch(console.error);
-  }, [homeId]);
-
-  const handleSubmit = async (e) => {
+  const handleAdd = async (e) => {
     e.preventDefault();
-    setError('');
-    setLoading(true);
+    setErr('');
+    if (!form.title.trim() || !form.amount) return setErr('Title and amount are required.');
+    if (form.category === 'Egg' && (!form.eggQty || Number(form.eggQty) < 1))
+      return setErr('Please enter egg quantity.');
+
+    setBusy(true);
     try {
-      const expense = await expenseApi.add(homeId, formData);
-      addExpense(expense);
-      setFormData({ title: '', amount: 0, category: 'groceries', date: new Date().toISOString().split('T')[0] });
-      setShowForm(false);
-    } catch (err) {
-      setError(err.message);
+      const payload = {
+        title:    form.title.trim(),
+        amount:   Number(form.amount),
+        category: form.category,
+        ...(form.category === 'Egg' ? { eggQty: Number(form.eggQty) } : {}),
+      };
+      const newExp = await expenseApi.add(homeId, payload);
+      setExpenses(prev => [newExp, ...prev]);
+      setForm({ title: '', amount: '', category: 'Grocery', eggQty: '' });
+    } catch (e) {
+      setErr(e.message);
     } finally {
-      setLoading(false);
+      setBusy(false);
     }
   };
 
@@ -42,82 +52,184 @@ export default function ExpenseTracker() {
     if (!confirm('Delete this expense?')) return;
     try {
       await expenseApi.remove(homeId, expId);
-      removeExpense(expId);
-    } catch (err) {
-      alert(err.message);
+      setExpenses(prev => prev.filter(e => e._id !== expId));
+    } catch (e) {
+      alert(e.message);
     }
   };
 
+  // Totals
+  const groceryTotal = expenses.filter(e => e.category === 'Grocery').reduce((s, e) => s + e.amount, 0);
+  const eggTotal     = expenses.filter(e => e.category === 'Egg').reduce((s, e) => s + e.amount, 0);
+  const eggQtyTotal  = expenses.filter(e => e.category === 'Egg').reduce((s, e) => s + (e.eggQty || 0), 0);
+
+  const inp = {
+    background: '#1e293b', border: '1px solid #334155', borderRadius: 8,
+    color: '#f1f5f9', padding: '10px 12px', fontSize: 14, outline: 'none',
+    width: '100%', boxSizing: 'border-box',
+  };
+
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold text-white">Expense Tracker</h3>
-        <button onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition">
-          <Plus className="w-4 h-4" /> Add Expense
-        </button>
+    <div style={{ color: '#f1f5f9' }}>
+      {/* Summary pills */}
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
+        {[
+          { label: 'Grocery Total', value: `৳${groceryTotal.toFixed(2)}`, color: '#6366f1' },
+          { label: 'Egg Total',     value: `৳${eggTotal.toFixed(2)}`,     color: '#f59e0b' },
+          { label: 'Eggs Bought',   value: `${eggQtyTotal} pcs`,          color: '#ec4899' },
+        ].map(({ label, value, color }) => (
+          <div key={label} style={{
+            background: '#0f172a', border: `1px solid ${color}40`,
+            borderRadius: 12, padding: '14px 20px', minWidth: 150,
+          }}>
+            <div style={{ color: '#6b7280', fontSize: 11, textTransform: 'uppercase', letterSpacing: 1 }}>{label}</div>
+            <div style={{ color, fontSize: 22, fontWeight: 800, marginTop: 4 }}>{value}</div>
+          </div>
+        ))}
       </div>
 
-      {showForm && (
-        <form onSubmit={handleSubmit} className="bg-white/5 border border-white/10 rounded-xl p-6 space-y-4">
+      {/* Add form */}
+      <div style={{
+        background: '#111827', borderRadius: 14, padding: 20,
+        border: '1px solid #1f2937', marginBottom: 20,
+      }}>
+        <h3 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 700, color: '#f8fafc' }}>
+          ➕ Add Expense
+        </h3>
+        {err && (
+          <p style={{ color: '#f87171', fontSize: 13, marginBottom: 10 }}>{err}</p>
+        )}
+        <form onSubmit={handleAdd} style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+          gap: 10,
+        }}>
+          {/* Title */}
           <div>
-            <label className="block text-sm text-gray-300 mb-2">Title</label>
-            <input type="text" value={formData.title}
-              onChange={e => setFormData({ ...formData, title: e.target.value })}
-              className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-purple-500" required />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm text-gray-300 mb-2">Amount (৳)</label>
-              <input type="number" step="0.01" min="0" value={formData.amount}
-                onChange={e => setFormData({ ...formData, amount: parseFloat(e.target.value) })}
-                className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-purple-500" required />
-            </div>
-            <div>
-              <label className="block text-sm text-gray-300 mb-2">Category</label>
-              <select value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-800 border border-white/20 rounded-lg text-white focus:outline-none focus:border-purple-500">
-                <option value="groceries">Groceries</option>
-                <option value="utilities">Utilities</option>
-                <option value="rent">Rent</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm text-gray-300 mb-2">Date</label>
-              <input type="date" value={formData.date}
-                onChange={e => setFormData({ ...formData, date: e.target.value })}
-                className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-purple-500" />
-            </div>
+            <label style={{ display: 'block', color: '#9ca3af', fontSize: 12, marginBottom: 4 }}>Title</label>
+            <input
+              style={inp} placeholder="e.g. Rice, Eggs…"
+              value={form.title}
+              onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
+            />
           </div>
 
-          {error && <p className="text-red-400 text-sm">{error}</p>}
+          {/* Category */}
+          <div>
+            <label style={{ display: 'block', color: '#9ca3af', fontSize: 12, marginBottom: 4 }}>Category</label>
+            <select
+              style={{ ...inp, cursor: 'pointer' }}
+              value={form.category}
+              onChange={e => setForm(p => ({ ...p, category: e.target.value, eggQty: '' }))}
+            >
+              {CATEGORIES.map(c => (
+                <option key={c} value={c} style={{ background: '#1f2937' }}>{c}</option>
+              ))}
+            </select>
+          </div>
 
-          <button type="submit" disabled={loading}
-            className="w-full py-2 bg-purple-500 hover:bg-purple-600 text-white font-semibold rounded-lg transition disabled:opacity-50">
-            {loading ? 'Saving...' : 'Save Expense'}
-          </button>
+          {/* Amount */}
+          <div>
+            <label style={{ display: 'block', color: '#9ca3af', fontSize: 12, marginBottom: 4 }}>Amount (৳)</label>
+            <input
+              style={inp} type="number" min="0" step="0.01" placeholder="0.00"
+              value={form.amount}
+              onChange={e => setForm(p => ({ ...p, amount: e.target.value }))}
+            />
+          </div>
+
+          {/* Egg quantity — only shown for Egg category */}
+          {form.category === 'Egg' && (
+            <div>
+              <label style={{ display: 'block', color: '#f59e0b', fontSize: 12, marginBottom: 4 }}>
+                🥚 Egg Quantity (pcs)
+              </label>
+              <input
+                style={{ ...inp, borderColor: '#f59e0b80' }}
+                type="number" min="1" placeholder="e.g. 30"
+                value={form.eggQty}
+                onChange={e => setForm(p => ({ ...p, eggQty: e.target.value }))}
+              />
+            </div>
+          )}
+
+          {/* Submit */}
+          <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+            <button
+              type="submit"
+              disabled={busy}
+              style={{
+                background: '#6366f1', color: '#fff', border: 'none',
+                borderRadius: 8, padding: '10px 18px', cursor: 'pointer',
+                fontSize: 13, fontWeight: 600,
+                display: 'flex', alignItems: 'center', gap: 6,
+                width: '100%', justifyContent: 'center',
+                opacity: busy ? 0.7 : 1,
+              }}
+            >
+              <PlusCircle size={14} /> Add
+            </button>
+          </div>
         </form>
-      )}
+      </div>
 
-      <div className="space-y-2">
+      {/* Expense list */}
+      <div style={{ background: '#111827', borderRadius: 14, border: '1px solid #1f2937', overflow: 'hidden' }}>
+        <div style={{
+          borderLeft: '4px solid #6366f1', padding: '12px 20px',
+          background: '#0f172a', fontWeight: 700, fontSize: 14, color: '#f1f5f9',
+        }}>
+          Expense Log
+        </div>
         {expenses.length === 0 ? (
-          <p className="text-gray-400 text-center py-8">No expenses recorded yet</p>
+          <p style={{ color: '#6b7280', textAlign: 'center', padding: 40 }}>No expenses yet.</p>
         ) : (
-          expenses.map((expense) => (
-            <div key={expense._id} className="bg-white/5 border border-white/10 rounded-lg p-4 flex justify-between items-center">
-              <div>
-                <p className="text-white font-semibold">{expense.title}</p>
-                <p className="text-gray-300 text-sm capitalize">{expense.category} • {expense.date?.split('T')[0] || expense.date}</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <p className="text-purple-400 font-bold">৳{Number(expense.amount).toFixed(2)}</p>
-                <button onClick={() => handleDelete(expense._id)} className="p-2 hover:bg-red-500/20 rounded-lg transition">
-                  <Trash2 className="w-4 h-4 text-red-400" />
-                </button>
-              </div>
-            </div>
-          ))
+          <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 13 }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid #1f2937' }}>
+                {['Title', 'Category', 'Amount', 'Eggs', 'Date', ''].map(h => (
+                  <th key={h} style={{
+                    padding: '10px 14px', textAlign: 'left',
+                    color: '#9ca3af', fontWeight: 600, fontSize: 11,
+                    textTransform: 'uppercase', letterSpacing: '.5px',
+                  }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {expenses.map(exp => (
+                <tr key={exp._id} style={{ borderBottom: '1px solid #1f293740' }}>
+                  <td style={{ padding: '10px 14px', fontWeight: 500 }}>{exp.title}</td>
+                  <td style={{ padding: '10px 14px' }}>
+                    <span style={{
+                      background: exp.category === 'Egg' ? '#78350f40' : '#1e1b4b40',
+                      color:      exp.category === 'Egg' ? '#fbbf24'   : '#a5b4fc',
+                      borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 600,
+                    }}>
+                      {exp.category}
+                    </span>
+                  </td>
+                  <td style={{ padding: '10px 14px', color: '#34d399', fontWeight: 700 }}>
+                    ৳{exp.amount.toFixed(2)}
+                  </td>
+                  <td style={{ padding: '10px 14px', color: '#fbbf24' }}>
+                    {exp.eggQty ? `${exp.eggQty} pcs` : '—'}
+                  </td>
+                  <td style={{ padding: '10px 14px', color: '#6b7280', fontSize: 12 }}>
+                    {new Date(exp.createdAt).toLocaleDateString()}
+                  </td>
+                  <td style={{ padding: '10px 14px' }}>
+                    <button
+                      onClick={() => handleDelete(exp._id)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                    >
+                      <Trash2 size={13} color="#ef4444" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
       </div>
     </div>
