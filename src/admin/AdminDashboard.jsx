@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-  Users, Trash2, User,
-  AlertTriangle, PlusCircle, Mail
+  Trash2, User, PlusCircle, Mail
 } from 'lucide-react';
 
 import { useHome } from '../context/HomeContext';
@@ -15,15 +14,12 @@ export default function AdminDashboard() {
   const [penalties, setPenalties] = useState([]);
   const [loadingAction, setLoadingAction] = useState('');
 
+  // ✅ UPDATED penalty state (ONLY 3 fields)
   const [penaltyData, setPenaltyData] = useState({
     userId: '',
-    amount: '',
+    meals: '',
     reason: '',
   });
-
-  // ✅ NEW: per meal rate
-  const [perMealRate, setPerMealRate] = useState(0);
-  const [mealCount, setMealCount] = useState(0);
 
   // ─────────────────────────────
   // LOAD DATA
@@ -80,28 +76,39 @@ export default function AdminDashboard() {
   };
 
   // ─────────────────────────────
-  // PENALTY SYSTEM (MEAL BASED)
+  // PENALTY → ADD MEALS DIRECTLY 🔥
   // ─────────────────────────────
   const handlePenaltySubmit = async (e) => {
     e.preventDefault();
 
-    const calculatedAmount = mealCount * perMealRate;
+    const { userId, meals, reason } = penaltyData;
 
-    if (!penaltyData.userId) {
-      return alert('Select user');
+    if (!userId || !meals) {
+      return alert('Select user and meal count');
     }
 
     try {
+      // ✅ 1. ADD MEAL (IMPORTANT)
+      await adminApi.addMealPenalty(homeId, {
+        userId,
+        meals: Number(meals),
+      });
+
+      // ✅ 2. SAVE PENALTY RECORD
       const newPenalty = await adminApi.addPenalty(homeId, {
-        userId: penaltyData.userId,
-        amount: calculatedAmount || Number(penaltyData.amount),
-        reason: penaltyData.reason || `Penalty for ${mealCount} meals`,
+        userId,
+        amount: Number(meals),
+        reason: reason || `Penalty for ${meals} meals`,
       });
 
       setPenalties(prev => [newPenalty, ...prev]);
 
-      setPenaltyData({ userId: '', amount: '', reason: '' });
-      setMealCount(0);
+      // reset form
+      setPenaltyData({
+        userId: '',
+        meals: '',
+        reason: '',
+      });
 
     } catch (err) {
       alert(err.message);
@@ -109,7 +116,7 @@ export default function AdminDashboard() {
   };
 
   // ─────────────────────────────
-  // SEND BILL (MANUAL)
+  // SEND BILL
   // ─────────────────────────────
   const handleSendBill = async () => {
     try {
@@ -153,7 +160,7 @@ export default function AdminDashboard() {
 
       </div>
 
-      {/* SEND BILL BUTTON */}
+      {/* SEND BILL */}
       <button
         onClick={handleSendBill}
         className="flex items-center gap-2 px-4 py-2 bg-green-500 rounded mb-6"
@@ -207,6 +214,7 @@ export default function AdminDashboard() {
 
         <form onSubmit={handlePenaltySubmit} className="flex gap-3 flex-wrap">
 
+          {/* USER */}
           <select
             value={penaltyData.userId}
             onChange={(e) =>
@@ -222,22 +230,18 @@ export default function AdminDashboard() {
             ))}
           </select>
 
+          {/* MEALS */}
           <input
             type="number"
-            placeholder="Meal Count (V)"
-            value={mealCount}
-            onChange={(e) => setMealCount(Number(e.target.value))}
+            placeholder="Meals (V)"
+            value={penaltyData.meals}
+            onChange={(e) =>
+              setPenaltyData({ ...penaltyData, meals: e.target.value })
+            }
             className="p-2 bg-gray-800 rounded"
           />
 
-          <input
-            type="number"
-            placeholder="Rate per Meal (৳)"
-            value={perMealRate}
-            onChange={(e) => setPerMealRate(Number(e.target.value))}
-            className="p-2 bg-gray-800 rounded"
-          />
-
+          {/* REASON */}
           <input
             type="text"
             placeholder="Reason"
@@ -264,7 +268,7 @@ export default function AdminDashboard() {
           <thead>
             <tr className="text-left text-gray-400">
               <th>User</th>
-              <th>Amount</th>
+              <th>Meals</th>
               <th>Reason</th>
             </tr>
           </thead>
@@ -274,7 +278,7 @@ export default function AdminDashboard() {
               <tr key={p._id} className="border-b border-gray-700">
 
                 <td>{p.userId?.firstName || 'Unknown'}</td>
-                <td>৳{p.amount}</td>
+                <td>{p.amount} V</td>
                 <td>{p.reason || '-'}</td>
 
               </tr>
