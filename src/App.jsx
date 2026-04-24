@@ -1,93 +1,79 @@
-import { useState } from "react";
-import { Menu, X, Home, BarChart2, Users, Settings } from "lucide-react";
+// src/App.jsx
+import { useState } from 'react';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { HomeProvider } from './context/HomeContext';
 
-export default function Layout() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+import RegisterPage          from './pages/RegisterPage';
+import LoginPage             from './pages/LoginPage';
+import OTPVerificationPage   from './pages/OTPVerificationPage';
+import MainApp               from './components/MainApp';
+import AdminDashboard        from './admin/AdminDashboard';
 
-  return (
-    <div className="flex h-screen bg-gray-100 overflow-hidden">
+// ── Inner router (has access to AuthContext) ──────────────
+function AppRouter() {
+  const { isAuthenticated } = useAuth();
+  // 'register' | 'login' | 'otp' | 'app' | 'admin'
+  const [screen, setScreen] = useState('login');
 
-      {/* ✅ Mobile Overlay */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* ✅ Sidebar */}
-      <div
-        className={`
-          fixed z-50 top-0 left-0 h-full w-64 bg-gradient-to-b from-purple-700 to-indigo-800 text-white
-          transform transition-transform duration-300
-          ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
-          md:translate-x-0 md:static md:block
-        `}
-      >
-        <div className="p-4 text-xl font-bold border-b border-white/20">
-          🍽️ Meal Mate
-        </div>
-
-        <nav className="p-4 space-y-2">
-          <SidebarItem icon={<Home size={18} />} label="Dashboard" />
-          <SidebarItem icon={<BarChart2 size={18} />} label="Analytics" />
-          <SidebarItem icon={<Users size={18} />} label="Members" />
-          <SidebarItem icon={<Settings size={18} />} label="Settings" />
-        </nav>
-      </div>
-
-      {/* ✅ Main Content */}
-      <div className="flex-1 flex flex-col w-full">
-
-        {/* ✅ Topbar */}
-        <div className="flex items-center justify-between bg-white px-4 py-3 shadow md:justify-end">
-
-          {/* Hamburger (Mobile only) */}
+  // Once authenticated, always show app
+  if (isAuthenticated) {
+    return (
+      <>
+        {/* Top nav to switch between app & admin */}
+        <div style={{
+          padding: '10px 16px',
+          background: '#0f172a',
+          display: 'flex',
+          gap: '10px',
+          alignItems: 'center',
+        }}>
+          <span style={{ color: '#a78bfa', fontWeight: 700, marginRight: 12 }}>🍽 Meal Mate</span>
           <button
-            className="md:hidden"
-            onClick={() => setSidebarOpen(true)}
-          >
-            <Menu />
+            onClick={() => setScreen('app')}
+            style={{ color: screen === 'app' ? '#fff' : '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
+            Home
           </button>
-
-          <h1 className="font-semibold text-lg hidden md:block">
-            Dashboard
-          </h1>
+          <button
+            onClick={() => setScreen('admin')}
+            style={{ color: screen === 'admin' ? '#fff' : '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
+            Admin
+          </button>
         </div>
+        {screen === 'admin' ? <AdminDashboard /> : <MainApp />}
+      </>
+    );
+  }
 
-        {/* ✅ Page Content */}
-        <div className="p-4 overflow-auto">
-          <h2 className="text-2xl font-bold mb-4">
-            Welcome to Meal Mate 🎉
-          </h2>
+  if (screen === 'register') {
+    return (
+      <RegisterPage
+        onRegistered={(email) => setScreen('otp')}
+        onGoLogin={() => setScreen('login')}
+      />
+    );
+  }
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <Card title="Total Meals" value="120" />
-            <Card title="Total Cost" value="$450" />
-            <Card title="Per Head" value="$75" />
-          </div>
-        </div>
-      </div>
-    </div>
+  if (screen === 'otp') {
+    return (
+      <OTPVerificationPage
+        onVerified={() => setScreen('app')}
+      />
+    );
+  }
+
+  // Default: login
+  return (
+    <LoginPage onGoRegister={() => setScreen('register')} />
   );
 }
 
-/* ✅ Sidebar Item */
-function SidebarItem({ icon, label }) {
+// ── Root ──────────────────────────────────────────────────
+export default function App() {
   return (
-    <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/20 cursor-pointer">
-      {icon}
-      <span>{label}</span>
-    </div>
-  );
-}
-
-/* ✅ Card Component */
-function Card({ title, value }) {
-  return (
-    <div className="bg-white p-4 rounded-xl shadow">
-      <h3 className="text-gray-500 text-sm">{title}</h3>
-      <p className="text-xl font-bold">{value}</p>
-    </div>
+    <AuthProvider>
+      <HomeProvider>
+        <AppRouter />
+      </HomeProvider>
+    </AuthProvider>
   );
 }
