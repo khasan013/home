@@ -1,104 +1,28 @@
 // src/components/MainApp.jsx - Mobile Responsive with Search to Join Home
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Home, LogOut, Users, TrendingUp, Settings, ChevronDown, Plus, AlertCircle, Menu, X, Search, Loader } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useHome } from '../context/HomeContext';
 import { homeApi } from '../api';
 import HomeDashboard from './HomeDashboard';
 
-export default function MainApp() {
-  const { user, logout }               = useAuth();
-  const { homes, setHomes, currentHome, setCurrentHome } = useHome();
-  const [sidebarOpen,  setSidebarOpen]  = useState(window.innerWidth >= 768);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [showNewHome,  setShowNewHome]  = useState(false);
-  const [newHomeName,  setNewHomeName]  = useState('');
-  const [activeNav,    setActiveNav]    = useState('Dashboard');
-  const [error,        setError]        = useState('');
-  const [isMobile,     setIsMobile]     = useState(window.innerWidth < 768);
-  
-  // Search to join home
-  const [searchCode, setSearchCode] = useState('');
-  const [searchError, setSearchError] = useState('');
-  const [searchLoading, setSearchLoading] = useState(false);
-  const [showJoinForm, setShowJoinForm] = useState(false);
-
-  // Load all homes on mount
-  useEffect(() => {
-    homeApi.getAll()
-      .then(data => {
-        setHomes(data);
-        if (data.length > 0 && !currentHome) setCurrentHome(data[0]);
-      })
-      .catch(console.error);
-  }, []);
-
-  // Handle responsive sidebar
-  useEffect(() => {
-    const handleResize = () => {
-      const mobile = window.innerWidth < 768;
-      setIsMobile(mobile);
-      if (!mobile) {
-        setSidebarOpen(true);
-        setMobileMenuOpen(false);
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  const handleCreateHome = async (e) => {
-    e.preventDefault();
-    setError('');
-    try {
-      const home = await homeApi.create({ name: newHomeName });
-      setHomes(prev => [...prev, home]);
-      setCurrentHome(home);
-      setNewHomeName('');
-      setShowNewHome(false);
-    } catch (err) {
-      setError(err.message);
-    }
-  };
-
-  // Search and join home by invite code
-  const handleJoinHome = async (e) => {
-    e.preventDefault();
-    setSearchError('');
-    setSearchLoading(true);
-    
-    try {
-      if (!searchCode.trim()) {
-        setSearchError('Please enter an invite code');
-        setSearchLoading(false);
-        return;
-      }
-
-      // Call API to join home by code
-      const home = await homeApi.joinByCode(searchCode.trim());
-      setHomes(prev => {
-        const exists = prev.some(h => h._id === home._id);
-        return exists ? prev : [...prev, home];
-      });
-      setCurrentHome(home);
-      setSearchCode('');
-      setShowJoinForm(false);
-      setSearchError('');
-    } catch (err) {
-      setSearchError(err.message || 'Invalid invite code or home not found');
-    } finally {
-      setSearchLoading(false);
-    }
-  };
-
-  const handleNavClick = (label) => {
-    setActiveNav(label);
-    if (isMobile) {
-      setMobileMenuOpen(false);
-    }
-  };
-
+// ── CRITICAL FIX: SidebarContent must be defined OUTSIDE MainApp ──
+// When defined inside, React treats it as a brand-new component type on every
+// render, causing it to unmount/remount → input loses focus → keyboard dismisses.
+function SidebarContent({
+  user, logout,
+  homes, currentHome, setCurrentHome,
+  showJoinForm, setShowJoinForm,
+  searchCode, setSearchCode,
+  searchError, searchLoading,
+  handleJoinHome,
+  showNewHome, setShowNewHome,
+  newHomeName, setNewHomeName,
+  error, setError,
+  handleCreateHome,
+  activeNav, handleNavClick,
+  isMobile, setMobileMenuOpen,
+}) {
   const navItems = [
     { icon: Home,       label: 'Dashboard' },
     { icon: TrendingUp, label: 'Analytics' },
@@ -106,9 +30,7 @@ export default function MainApp() {
     { icon: Settings,   label: 'Settings'  },
   ];
 
-  // FIX: useCallback prevents SidebarContent from being treated as a new component
-  // on every render, which was causing the input to unmount/remount and dismiss the keyboard.
-  const SidebarContent = useCallback(() => (
+  return (
     <div className="p-4 md:p-6 space-y-6 h-full flex flex-col overflow-y-auto">
       {/* Logo */}
       <div>
@@ -146,7 +68,6 @@ export default function MainApp() {
                 onClick={() => {
                   setShowJoinForm(false);
                   setSearchCode('');
-                  setSearchError('');
                 }}
                 disabled={searchLoading}
                 className="px-3 py-2 text-gray-400 hover:text-white hover:bg-white/10 text-sm rounded-lg transition disabled:opacity-50">
@@ -167,8 +88,8 @@ export default function MainApp() {
       <div className="space-y-2">
         <p className="text-gray-500 text-xs uppercase font-semibold tracking-wider">Your Homes</p>
         {homes.map(home => (
-          <button 
-            key={home._id} 
+          <button
+            key={home._id}
             onClick={() => {
               setCurrentHome(home);
               if (isMobile) setMobileMenuOpen(false);
@@ -185,32 +106,32 @@ export default function MainApp() {
         {/* Create New Home */}
         {showNewHome ? (
           <form onSubmit={handleCreateHome} className="space-y-2">
-            <input 
-              value={newHomeName} 
+            <input
+              value={newHomeName}
               onChange={e => setNewHomeName(e.target.value)}
-              placeholder="Home name" 
+              placeholder="Home name"
               required
-              className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:border-purple-500" 
+              className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:border-purple-500"
             />
             {error && <p className="text-red-400 text-xs">{error}</p>}
             <div className="flex gap-2">
               <button type="submit" className="flex-1 py-1 bg-purple-500 text-white text-sm rounded-lg hover:bg-purple-600 transition">
                 Create
               </button>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => {
                   setShowNewHome(false);
                   setNewHomeName('');
                   setError('');
-                }} 
+                }}
                 className="px-3 py-1 text-gray-400 hover:text-white text-sm transition">
                 ✕
               </button>
             </div>
           </form>
         ) : (
-          <button 
+          <button
             onClick={() => setShowNewHome(true)}
             className="w-full flex items-center gap-2 px-3 py-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg text-sm transition">
             <Plus className="w-4 h-4" /> New Home
@@ -224,8 +145,8 @@ export default function MainApp() {
       {/* Nav */}
       <nav className="space-y-1 flex-1">
         {navItems.map(({ icon: Icon, label }) => (
-          <button 
-            key={label} 
+          <button
+            key={label}
             onClick={() => handleNavClick(label)}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${
               activeNav === label
@@ -249,38 +170,141 @@ export default function MainApp() {
             <p className="text-gray-400 text-xs truncate">{user?.email}</p>
           </div>
         </div>
-        <button 
+        <button
           onClick={logout}
           className="w-full flex items-center justify-center gap-2 px-4 py-2 text-red-300 hover:bg-red-500/20 rounded-lg transition">
           <LogOut className="w-4 h-4" /> Logout
         </button>
       </div>
     </div>
-  ), [homes, currentHome, showJoinForm, searchCode, searchError, searchLoading, showNewHome, newHomeName, error, activeNav, isMobile, user]);
+  );
+}
+
+export default function MainApp() {
+  const { user, logout }               = useAuth();
+  const { homes, setHomes, currentHome, setCurrentHome } = useHome();
+  const [sidebarOpen,  setSidebarOpen]  = useState(window.innerWidth >= 768);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showNewHome,  setShowNewHome]  = useState(false);
+  const [newHomeName,  setNewHomeName]  = useState('');
+  const [activeNav,    setActiveNav]    = useState('Dashboard');
+  const [error,        setError]        = useState('');
+  const [isMobile,     setIsMobile]     = useState(window.innerWidth < 768);
+
+  // Search to join home
+  const [searchCode,    setSearchCode]    = useState('');
+  const [searchError,   setSearchError]   = useState('');
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [showJoinForm,  setShowJoinForm]  = useState(false);
+
+  // Load all homes on mount
+  useEffect(() => {
+    homeApi.getAll()
+      .then(data => {
+        setHomes(data);
+        if (data.length > 0 && !currentHome) setCurrentHome(data[0]);
+      })
+      .catch(console.error);
+  }, []);
+
+  // Handle responsive sidebar
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (!mobile) {
+        setSidebarOpen(true);
+        setMobileMenuOpen(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const handleCreateHome = async (e) => {
+    e.preventDefault();
+    setError('');
+    try {
+      const home = await homeApi.create({ name: newHomeName });
+      setHomes(prev => [...prev, home]);
+      setCurrentHome(home);
+      setNewHomeName('');
+      setShowNewHome(false);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleJoinHome = async (e) => {
+    e.preventDefault();
+    setSearchError('');
+    setSearchLoading(true);
+    try {
+      if (!searchCode.trim()) {
+        setSearchError('Please enter an invite code');
+        setSearchLoading(false);
+        return;
+      }
+      const home = await homeApi.joinByCode(searchCode.trim());
+      setHomes(prev => {
+        const exists = prev.some(h => h._id === home._id);
+        return exists ? prev : [...prev, home];
+      });
+      setCurrentHome(home);
+      setSearchCode('');
+      setShowJoinForm(false);
+      setSearchError('');
+    } catch (err) {
+      setSearchError(err.message || 'Invalid invite code or home not found');
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const handleNavClick = (label) => {
+    setActiveNav(label);
+    if (isMobile) setMobileMenuOpen(false);
+  };
+
+  // Shared props passed down to SidebarContent
+  const sidebarProps = {
+    user, logout,
+    homes, currentHome, setCurrentHome,
+    showJoinForm, setShowJoinForm,
+    searchCode, setSearchCode,
+    searchError, searchLoading,
+    handleJoinHome,
+    showNewHome, setShowNewHome,
+    newHomeName, setNewHomeName,
+    error, setError,
+    handleCreateHome,
+    activeNav, handleNavClick,
+    isMobile, setMobileMenuOpen,
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col md:flex-row">
       {/* ── DESKTOP SIDEBAR (hidden on mobile) ── */}
-      <div className={`hidden md:flex md:w-64 bg-white/5 border-r border-white/10 backdrop-blur-sm transition-all duration-300 overflow-hidden flex-shrink-0`}>
-        <SidebarContent />
+      <div className="hidden md:flex md:w-64 bg-white/5 border-r border-white/10 backdrop-blur-sm transition-all duration-300 overflow-hidden flex-shrink-0">
+        <SidebarContent {...sidebarProps} />
       </div>
 
       {/* ── MOBILE OVERLAY ── */}
       {mobileMenuOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 z-40 md:hidden"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
 
       {/* ── MOBILE SIDEBAR (drawer) ── */}
-      <div 
+      <div
         className={`fixed md:hidden top-0 left-0 h-screen w-64 bg-white/5 border-r border-white/10 backdrop-blur-sm z-50 transform transition-transform duration-300 ${
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         <div className="pt-16">
-          <SidebarContent />
+          <SidebarContent {...sidebarProps} />
         </div>
       </div>
 
@@ -290,7 +314,7 @@ export default function MainApp() {
         <div className="bg-white/5 border-b border-white/10 backdrop-blur-sm px-4 md:px-6 py-4 flex justify-between items-center">
           <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
             {/* Mobile Menu Button */}
-            <button 
+            <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="md:hidden p-2 hover:bg-white/10 rounded-lg transition">
               {mobileMenuOpen ? (
@@ -301,7 +325,7 @@ export default function MainApp() {
             </button>
 
             {/* Desktop Sidebar Toggle */}
-            <button 
+            <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className="hidden md:block p-2 hover:bg-white/10 rounded-lg transition">
               <ChevronDown className={`w-5 h-5 text-white transition-transform ${sidebarOpen ? '-rotate-90' : 'rotate-90'}`} />
