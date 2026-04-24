@@ -1,5 +1,5 @@
 // src/components/MainApp.jsx - Mobile Responsive with Search to Join Home
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Home, LogOut, Users, TrendingUp, Settings, ChevronDown, Plus, AlertCircle, Menu, X, Search, Loader } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useHome } from '../context/HomeContext';
@@ -106,8 +106,9 @@ export default function MainApp() {
     { icon: Settings,   label: 'Settings'  },
   ];
 
-  // Sidebar Content (reusable for both desktop and mobile)
-  const SidebarContent = () => (
+  // FIX: useCallback prevents SidebarContent from being treated as a new component
+  // on every render, which was causing the input to unmount/remount and dismiss the keyboard.
+  const SidebarContent = useCallback(() => (
     <div className="p-4 md:p-6 space-y-6 h-full flex flex-col overflow-y-auto">
       {/* Logo */}
       <div>
@@ -126,7 +127,7 @@ export default function MainApp() {
                 value={searchCode}
                 onChange={e => setSearchCode(e.target.value.toUpperCase())}
                 placeholder="Enter invite code"
-                maxLength="6"
+                maxLength="8"
                 className="flex-1 bg-transparent text-white text-sm placeholder-gray-500 focus:outline-none font-mono tracking-wider"
                 disabled={searchLoading}
               />
@@ -255,7 +256,7 @@ export default function MainApp() {
         </button>
       </div>
     </div>
-  );
+  ), [homes, currentHome, showJoinForm, searchCode, searchError, searchLoading, showNewHome, newHomeName, error, activeNav, isMobile, user]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col md:flex-row">
