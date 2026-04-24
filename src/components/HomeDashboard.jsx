@@ -5,23 +5,37 @@ import {
   ResponsiveContainer, PieChart, Pie, Cell,
 } from 'recharts';
 import { useHome } from '../context/HomeContext';
-import { reportApi, homeApi } from '../api';
 import MealTracking     from './MealTracking';
 import ExpenseTracker   from './ExpenseTracker';
 import MemberManagement from './MemberManagement';
+import { reportApi, homeApi, expenseApi } from '../api';
 
 const COLORS = ['#8b5cf6', '#ec4899', '#06b6d4', '#f59e0b'];
 
 export default function HomeDashboard() {
-  const { currentHome, members, setMembers, meals, expenses, report, setReport } = useHome();
+  const { currentHome, members, setMembers, meals, expenses, setExpenses, report, setReport } = useHome();
   const [activeTab, setActiveTab] = useState('overview');
   const homeId = currentHome?._id;
 
-  useEffect(() => {
-    if (!homeId) return;
-    reportApi.get(homeId).then(setReport).catch(console.error);
-    if (currentHome?.members) setMembers(currentHome.members);
-  }, [homeId]);
+ 
+useEffect(() => {
+  if (!homeId) return;
+
+  // existing
+  reportApi.get(homeId)
+    .then(setReport)
+    .catch(console.error);
+
+  if (currentHome?.members) {
+    setMembers(currentHome.members);
+  }
+
+  // 🔥 ADD THIS (THIS IS THE FIX)
+  expenseApi.getAll(homeId)
+    .then(setExpenses)   // ⚠️ make sure setExpenses is available from context
+    .catch(console.error);
+
+}, [homeId]);
 
   const totalExpense = report?.totalExpense ?? expenses.reduce((s, e) => s + e.amount, 0);
   const totalMeals   = report?.totalMeals   ?? meals.reduce((s, m) => s + m.mealCount, 0);
