@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { useHome } from '../context/HomeContext';
 import { mealApi } from '../api';
 
@@ -10,7 +10,7 @@ export default function MealTracking() {
   const isAdmin = currentHome?.role === 'admin'; // ✅ ADMIN CHECK
 
   const [showForm, setShowForm] = useState(false);
-  const [editing, setEditing] = useState(null); // {date, user}
+  const [editing, setEditing] = useState(null);
   const [editValue, setEditValue] = useState('');
 
   const [formData, setFormData] = useState({
@@ -46,15 +46,27 @@ export default function MealTracking() {
 
   const users = Array.from(usersSet);
 
-  // ADD
+  // ADD (✅ ALL USERS CAN ADD)
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const meal = await mealApi.add(homeId, formData);
-    addMeal(meal);
-    setShowForm(false);
+
+    try {
+      const meal = await mealApi.add(homeId, formData);
+      addMeal(meal);
+
+      setFormData({
+        date: new Date().toISOString().split('T')[0],
+        mealCount: 0,
+        eggsCount: 0,
+      });
+
+      setShowForm(false);
+    } catch (err) {
+      alert(err.message);
+    }
   };
 
-  // EDIT CLICK
+  // EDIT (✅ ADMIN ONLY)
   const handleEdit = (date, user, value) => {
     if (!isAdmin) return;
 
@@ -75,11 +87,24 @@ export default function MealTracking() {
         eggsCount: eggs,
       });
 
-      // reload
       const updated = await mealApi.getAll(homeId);
       setMeals(updated);
 
       setEditing(null);
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  // DELETE (✅ ADMIN ONLY)
+  const handleDelete = async (mealId) => {
+    if (!confirm('Delete this meal?')) return;
+
+    try {
+      await mealApi.remove(homeId, mealId);
+
+      const updated = await mealApi.getAll(homeId);
+      setMeals(updated);
     } catch (err) {
       alert(err.message);
     }
@@ -103,22 +128,77 @@ export default function MealTracking() {
     <div className="space-y-4">
 
       {/* HEADER */}
-      <div className="flex justify-between">
-        <h3 className="text-white text-lg">Meal Table</h3>
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-semibold text-white">Meal Table</h3>
 
-        {isAdmin && (
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="bg-purple-500 px-4 py-2 rounded-lg text-white"
-          >
-            <Plus className="w-4 h-4 inline" /> Add Meal
-          </button>
-        )}
+        {/* ✅ EVERYONE CAN ADD */}
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className="flex items-center gap-2 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg"
+        >
+          <Plus className="w-4 h-4" /> Add Meal
+        </button>
       </div>
+
+      {/* FORM */}
+      {showForm && (
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white/5 border border-white/10 rounded-xl p-6 space-y-4"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+            <input
+              type="date"
+              value={formData.date}
+              onChange={(e) =>
+                setFormData({ ...formData, date: e.target.value })
+              }
+              className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white"
+              required
+            />
+
+            <input
+              type="number"
+              step="0.25"
+              min="0"
+              value={formData.mealCount}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  mealCount: parseFloat(e.target.value),
+                })
+              }
+              className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white"
+            />
+
+            <input
+              type="number"
+              min="0"
+              value={formData.eggsCount}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  eggsCount: parseInt(e.target.value),
+                })
+              }
+              className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white"
+            />
+
+          </div>
+
+          <button
+            type="submit"
+            className="w-full py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg"
+          >
+            Save Meal
+          </button>
+        </form>
+      )}
 
       {/* TABLE */}
       <div className="overflow-x-auto bg-white/5 border border-white/10 rounded-xl">
-        <table className="w-full text-white">
+        <table className="w-full text-sm text-white">
 
           <thead className="bg-white/10">
             <tr>
@@ -147,7 +227,9 @@ export default function MealTracking() {
                   return (
                     <td
                       key={u}
-                      className={`p-3 text-center ${isAdmin ? 'cursor-pointer hover:bg-white/10' : ''}`}
+                      className={`p-3 text-center ${
+                        isAdmin ? 'cursor-pointer hover:bg-white/10' : ''
+                      }`}
                       onClick={() => handleEdit(date, u, display)}
                     >
                       {isEditing ? (
@@ -162,12 +244,28 @@ export default function MealTracking() {
                           className="bg-transparent border border-purple-400 text-center w-20"
                         />
                       ) : (
-                        display || '0'
+                        <div className="flex items-center justify-center gap-2">
+
+                          <span>{display || '0'}</span>
+
+                          {/* ✅ DELETE ONLY ADMIN */}
+                          {isAdmin && cell && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(cell.mealId);
+                              }}
+                              className="text-red-400 hover:text-red-600"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+
+                        </div>
                       )}
                     </td>
                   );
                 })}
-
               </tr>
             ))}
           </tbody>
