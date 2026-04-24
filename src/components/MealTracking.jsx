@@ -31,7 +31,7 @@ export default function MealTracking() {
 
   meals.forEach((meal) => {
     const date = meal.date?.split('T')[0];
-    const user = meal.user?.firstName || 'Unknown';
+    const user = meal.userId?.firstName || 'Unknown';
 
     usersSet.add(user);
 
