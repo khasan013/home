@@ -78,7 +78,8 @@ export default function MealTracking() {
       eggsCount: Number(eggs) || 0,
     });
 
-    addMeal(meal);
+    const updated = await mealApi.getAll(homeId);
+setMeals(updated);
 
     setFormData({
       date: new Date().toISOString().split('T')[0],
