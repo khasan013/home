@@ -1,6 +1,6 @@
-// src/components/MainApp.jsx - Mobile Responsive Version
+// src/components/MainApp.jsx - Mobile Responsive with Search to Join Home
 import { useState, useEffect } from 'react';
-import { Home, LogOut, Users, TrendingUp, Settings, ChevronDown, Plus, AlertCircle, Menu, X } from 'lucide-react';
+import { Home, LogOut, Users, TrendingUp, Settings, ChevronDown, Plus, AlertCircle, Menu, X, Search, Loader } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useHome } from '../context/HomeContext';
 import { homeApi } from '../api';
@@ -9,13 +9,19 @@ import HomeDashboard from './HomeDashboard';
 export default function MainApp() {
   const { user, logout }               = useAuth();
   const { homes, setHomes, currentHome, setCurrentHome } = useHome();
-  const [sidebarOpen,  setSidebarOpen]  = useState(window.innerWidth >= 768); // Open by default on desktop
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false); // Mobile hamburger menu
+  const [sidebarOpen,  setSidebarOpen]  = useState(window.innerWidth >= 768);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showNewHome,  setShowNewHome]  = useState(false);
   const [newHomeName,  setNewHomeName]  = useState('');
   const [activeNav,    setActiveNav]    = useState('Dashboard');
   const [error,        setError]        = useState('');
   const [isMobile,     setIsMobile]     = useState(window.innerWidth < 768);
+  
+  // Search to join home
+  const [searchCode, setSearchCode] = useState('');
+  const [searchError, setSearchError] = useState('');
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [showJoinForm, setShowJoinForm] = useState(false);
 
   // Load all homes on mount
   useEffect(() => {
@@ -33,8 +39,8 @@ export default function MainApp() {
       const mobile = window.innerWidth < 768;
       setIsMobile(mobile);
       if (!mobile) {
-        setSidebarOpen(true); // Auto-open on desktop
-        setMobileMenuOpen(false); // Close mobile menu
+        setSidebarOpen(true);
+        setMobileMenuOpen(false);
       }
     };
 
@@ -56,10 +62,40 @@ export default function MainApp() {
     }
   };
 
+  // Search and join home by invite code
+  const handleJoinHome = async (e) => {
+    e.preventDefault();
+    setSearchError('');
+    setSearchLoading(true);
+    
+    try {
+      if (!searchCode.trim()) {
+        setSearchError('Please enter an invite code');
+        setSearchLoading(false);
+        return;
+      }
+
+      // Call API to join home by code
+      const home = await homeApi.joinByCode(searchCode.trim());
+      setHomes(prev => {
+        const exists = prev.some(h => h._id === home._id);
+        return exists ? prev : [...prev, home];
+      });
+      setCurrentHome(home);
+      setSearchCode('');
+      setShowJoinForm(false);
+      setSearchError('');
+    } catch (err) {
+      setSearchError(err.message || 'Invalid invite code or home not found');
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
   const handleNavClick = (label) => {
     setActiveNav(label);
     if (isMobile) {
-      setMobileMenuOpen(false); // Close menu on mobile after selection
+      setMobileMenuOpen(false);
     }
   };
 
@@ -77,6 +113,53 @@ export default function MainApp() {
       <div>
         <h1 className="text-2xl font-bold text-white">Meal Mate</h1>
         <p className="text-gray-400 text-sm">Fair Sharing</p>
+      </div>
+
+      {/* Search to Join Home */}
+      <div className="space-y-2">
+        {showJoinForm ? (
+          <form onSubmit={handleJoinHome} className="space-y-3 bg-white/5 p-4 rounded-lg border border-white/10">
+            <div className="flex items-center gap-2">
+              <Search className="w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                value={searchCode}
+                onChange={e => setSearchCode(e.target.value.toUpperCase())}
+                placeholder="Enter invite code"
+                maxLength="6"
+                className="flex-1 bg-transparent text-white text-sm placeholder-gray-500 focus:outline-none font-mono tracking-wider"
+                disabled={searchLoading}
+              />
+            </div>
+            {searchError && <p className="text-red-400 text-xs">{searchError}</p>}
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                disabled={searchLoading}
+                className="flex-1 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition disabled:opacity-50 flex items-center justify-center gap-2">
+                {searchLoading && <Loader className="w-3 h-3 animate-spin" />}
+                {searchLoading ? 'Joining...' : 'Join'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowJoinForm(false);
+                  setSearchCode('');
+                  setSearchError('');
+                }}
+                disabled={searchLoading}
+                className="px-3 py-2 text-gray-400 hover:text-white hover:bg-white/10 text-sm rounded-lg transition disabled:opacity-50">
+                ✕
+              </button>
+            </div>
+          </form>
+        ) : (
+          <button
+            onClick={() => setShowJoinForm(true)}
+            className="w-full flex items-center gap-2 px-3 py-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg text-sm transition">
+            <Search className="w-4 h-4" /> Join Home
+          </button>
+        )}
       </div>
 
       {/* Home Switcher */}
@@ -118,6 +201,7 @@ export default function MainApp() {
                 onClick={() => {
                   setShowNewHome(false);
                   setNewHomeName('');
+                  setError('');
                 }} 
                 className="px-3 py-1 text-gray-400 hover:text-white text-sm transition">
                 ✕
@@ -132,6 +216,9 @@ export default function MainApp() {
           </button>
         )}
       </div>
+
+      {/* Divider */}
+      <div className="border-t border-white/10" />
 
       {/* Nav */}
       <nav className="space-y-1 flex-1">
@@ -191,7 +278,7 @@ export default function MainApp() {
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="pt-16"> {/* Add padding for top bar */}
+        <div className="pt-16">
           <SidebarContent />
         </div>
       </div>
