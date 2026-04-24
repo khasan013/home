@@ -251,21 +251,25 @@ function AppRouter() {
     );
   }
 
-  if (screen === 'register') {
-    return (
-      <RegisterPage
-        onRegistered={(email) => setScreen('otp')}
-        onGoLogin={() => setScreen('login')}
-      />
-    );
-  }
+ if (screen === 'register') {
+  return (
+    <RegisterPage
+      onRegistered={(email) => {
+        setResetEmail(email);
+        setScreen('otp');
+      }}
+      onGoLogin={() => setScreen('login')}
+    />
+  );
+}
   if (screen === 'reset') {
   return (
     <ResetPasswordPage
       email={resetEmail}
       onDone={() => setScreen('login')}
     />
-    );
+  );
+
   }
 
   if (screen === 'otp') {
@@ -280,21 +284,22 @@ if (screen === 'forgot') {
     <ForgotPasswordPage
       onNext={(email) => {
         setResetEmail(email);
-        setScreen('reset'); // ✅ FIXED
+        setScreen('reset'); // 🔥 NOT login
       }}
       onBack={() => setScreen('login')}
     />
   );
+
 }
 
   return (
-  <LoginPage
-    onGoRegister={() => setScreen('register')}
-    onForgotPassword={(email) => {
-      setResetEmail(email);
-      setScreen('forgot'); // 🔥 THIS FIXES YOUR BUTTON
-    }}
-  />
+ <LoginPage
+  onGoRegister={() => setScreen('register')}   // 🔥 THIS FIXES REGISTER BUTTON
+  onForgotPassword={(email) => {
+    setResetEmail(email);
+    setScreen('forgot');
+  }}
+/>
 );
 }
 

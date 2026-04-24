@@ -17,11 +17,8 @@ export default function LoginPage({ onGoRegister, onForgotPassword }) {
 
     try {
       const data = await authApi.login({ email, password });
-
       const payload = JSON.parse(atob(data.token.split('.')[1]));
-
       login({ userId: payload.userId, email }, data.token);
-
     } catch (err) {
       setError(err.message);
     } finally {
@@ -57,7 +54,6 @@ export default function LoginPage({ onGoRegister, onForgotPassword }) {
               required
             />
 
-            {/* ✅ FIXED: uses your existing routing system */}
             <div className="text-right -mt-2">
               <button
                 type="button"
@@ -86,7 +82,7 @@ export default function LoginPage({ onGoRegister, onForgotPassword }) {
               Don't have an account?{' '}
               <button
                 type="button"
-                onClick={onGoRegister}
+                onClick={() => onGoRegister && onGoRegister()}
                 className="text-purple-400"
               >
                 Register
