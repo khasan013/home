@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   Users, Trash2, User,
-  AlertTriangle, PlusCircle
+  AlertTriangle, PlusCircle, Mail
 } from 'lucide-react';
 
 import { useHome } from '../context/HomeContext';
@@ -15,19 +15,21 @@ export default function AdminDashboard() {
   const [penalties, setPenalties] = useState([]);
   const [loadingAction, setLoadingAction] = useState('');
 
-  // ✅ penalty form state
   const [penaltyData, setPenaltyData] = useState({
     userId: '',
     amount: '',
     reason: '',
   });
 
+  // ✅ NEW: per meal rate
+  const [perMealRate, setPerMealRate] = useState(0);
+  const [mealCount, setMealCount] = useState(0);
+
   // ─────────────────────────────
   // LOAD DATA
   // ─────────────────────────────
   useEffect(() => {
     if (!homeId) return;
-
     loadData();
   }, [homeId]);
 
@@ -69,7 +71,6 @@ export default function AdminDashboard() {
     setLoadingAction(userId);
     try {
       await adminApi.removeUser(homeId, userId);
-
       setMembers(prev => prev.filter(m => m.user?._id !== userId));
     } catch (err) {
       alert(err.message);
@@ -79,30 +80,41 @@ export default function AdminDashboard() {
   };
 
   // ─────────────────────────────
-  // SET PENALTY 🔥
+  // PENALTY SYSTEM (MEAL BASED)
   // ─────────────────────────────
   const handlePenaltySubmit = async (e) => {
     e.preventDefault();
 
-    if (!penaltyData.userId || !penaltyData.amount) {
-      return alert('Select user and amount');
+    const calculatedAmount = mealCount * perMealRate;
+
+    if (!penaltyData.userId) {
+      return alert('Select user');
     }
 
     try {
       const newPenalty = await adminApi.addPenalty(homeId, {
         userId: penaltyData.userId,
-        amount: Number(penaltyData.amount),
-        reason: penaltyData.reason,
+        amount: calculatedAmount || Number(penaltyData.amount),
+        reason: penaltyData.reason || `Penalty for ${mealCount} meals`,
       });
 
       setPenalties(prev => [newPenalty, ...prev]);
 
-      setPenaltyData({
-        userId: '',
-        amount: '',
-        reason: '',
-      });
+      setPenaltyData({ userId: '', amount: '', reason: '' });
+      setMealCount(0);
 
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  // ─────────────────────────────
+  // SEND BILL (MANUAL)
+  // ─────────────────────────────
+  const handleSendBill = async () => {
+    try {
+      await adminApi.sendBill(homeId);
+      alert('📧 Bills sent successfully!');
     } catch (err) {
       alert(err.message);
     }
@@ -116,15 +128,12 @@ export default function AdminDashboard() {
     0
   );
 
-  // ─────────────────────────────
-  // UI
-  // ─────────────────────────────
   return (
     <div className="p-6 text-white">
 
       <h1 className="text-2xl font-bold mb-6">Admin Dashboard</h1>
 
-      {/* ───────── OVERVIEW ───────── */}
+      {/* OVERVIEW */}
       <div className="grid grid-cols-3 gap-4 mb-6">
 
         <div className="bg-gray-800 p-4 rounded">
@@ -144,7 +153,16 @@ export default function AdminDashboard() {
 
       </div>
 
-      {/* ───────── MEMBERS ───────── */}
+      {/* SEND BILL BUTTON */}
+      <button
+        onClick={handleSendBill}
+        className="flex items-center gap-2 px-4 py-2 bg-green-500 rounded mb-6"
+      >
+        <Mail size={16} />
+        Send Bills Now
+      </button>
+
+      {/* MEMBERS */}
       <div className="mb-8">
         <h2 className="text-xl mb-3">Members</h2>
 
@@ -168,17 +186,11 @@ export default function AdminDashboard() {
 
                 <td className="flex gap-2 py-2">
 
-                  <button
-                    onClick={() => handlePromote(m.user?._id)}
-                    className="text-blue-400"
-                  >
+                  <button onClick={() => handlePromote(m.user?._id)} className="text-blue-400">
                     <User size={18} />
                   </button>
 
-                  <button
-                    onClick={() => handleRemove(m.user?._id)}
-                    className="text-red-400"
-                  >
+                  <button onClick={() => handleRemove(m.user?._id)} className="text-red-400">
                     <Trash2 size={18} />
                   </button>
 
@@ -189,14 +201,12 @@ export default function AdminDashboard() {
         </table>
       </div>
 
-      {/* ───────── ADD PENALTY 🔥 ───────── */}
+      {/* PENALTY SYSTEM */}
       <div className="mb-8">
-        <h2 className="text-xl mb-3">Set Penalty</h2>
+        <h2 className="text-xl mb-3">Set Penalty (Meal Based)</h2>
 
-        <form
-          onSubmit={handlePenaltySubmit}
-          className="flex gap-3 flex-wrap"
-        >
+        <form onSubmit={handlePenaltySubmit} className="flex gap-3 flex-wrap">
+
           <select
             value={penaltyData.userId}
             onChange={(e) =>
@@ -214,11 +224,17 @@ export default function AdminDashboard() {
 
           <input
             type="number"
-            placeholder="Amount"
-            value={penaltyData.amount}
-            onChange={(e) =>
-              setPenaltyData({ ...penaltyData, amount: e.target.value })
-            }
+            placeholder="Meal Count (V)"
+            value={mealCount}
+            onChange={(e) => setMealCount(Number(e.target.value))}
+            className="p-2 bg-gray-800 rounded"
+          />
+
+          <input
+            type="number"
+            placeholder="Rate per Meal (৳)"
+            value={perMealRate}
+            onChange={(e) => setPerMealRate(Number(e.target.value))}
             className="p-2 bg-gray-800 rounded"
           />
 
@@ -232,17 +248,15 @@ export default function AdminDashboard() {
             className="p-2 bg-gray-800 rounded"
           />
 
-          <button
-            type="submit"
-            className="flex items-center gap-2 px-4 bg-purple-500 rounded"
-          >
+          <button type="submit" className="flex items-center gap-2 px-4 bg-purple-500 rounded">
             <PlusCircle size={16} />
             Add
           </button>
+
         </form>
       </div>
 
-      {/* ───────── PENALTY LIST ───────── */}
+      {/* PENALTY LIST */}
       <div>
         <h2 className="text-xl mb-3">Penalty List</h2>
 
