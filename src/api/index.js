@@ -1,6 +1,6 @@
 // ============================================================
 // src/api/index.js
-// All backend calls in one place. Import and use anywhere.
+// All backend calls in one place
 // ============================================================
 
 const BASE_URL =
@@ -29,7 +29,6 @@ async function request(method, path, body = null, auth = true) {
     body: body ? JSON.stringify(body) : null,
   });
 
-  // ✅ FIX: safe JSON parsing
   let data = null;
   try {
     data = await res.json();
@@ -37,7 +36,6 @@ async function request(method, path, body = null, auth = true) {
     data = null;
   }
 
-  // ✅ FIX: better error message
   if (!res.ok) {
     throw new Error(
       data?.message ||
@@ -48,6 +46,7 @@ async function request(method, path, body = null, auth = true) {
 
   return data;
 }
+
 // ── Auth ──────────────────────────────────────────────────
 export const authApi = {
   register: (body) =>
@@ -62,11 +61,9 @@ export const authApi = {
   resendOtp: (body) =>
     request('POST', '/auth/resend-otp', body, false),
 
-  // 🔥 NEW: Forgot Password
   forgotPassword: (body) =>
     request('POST', '/auth/forgot-password', body, false),
 
-  // 🔥 NEW: Reset Password
   resetPassword: (body) =>
     request('POST', '/auth/reset-password', body, false),
 };
@@ -80,19 +77,15 @@ export const homeApi = {
   getById: (homeId) =>
     request('GET', `/home/${homeId}`),
 
-  // ✅ same logic, just cleaner
-  joinByCode: async (inviteCode) => {
-    if (!inviteCode || !inviteCode.trim()) {
+  joinByCode: async (code) => {
+    if (!code?.trim()) {
       throw new Error('Please enter an invite code');
     }
 
     return request('POST', '/home/join', {
-      inviteCode: inviteCode.trim().toUpperCase(),
+      inviteCode: code.trim().toUpperCase(),
     });
   },
-
-  getInvite: (homeId) =>
-    request('GET', `/home/${homeId}/invite`),
 
   getInviteCode: (homeId) =>
     request('GET', `/home/${homeId}/invite`),
@@ -133,6 +126,7 @@ export const reportApi = {
 
 // ── Admin ─────────────────────────────────────────────────
 export const adminApi = {
+  // Members
   getMembers: (homeId) =>
     request('GET', `/admin/${homeId}/members`),
 
@@ -142,6 +136,7 @@ export const adminApi = {
   removeUser: (homeId, userId) =>
     request('DELETE', `/admin/${homeId}/members/${userId}`),
 
+  // Penalties
   getPenalties: (homeId) =>
     request('GET', `/admin/${homeId}/penalties`),
 
@@ -150,4 +145,8 @@ export const adminApi = {
 
   removePenalty: (homeId, penId) =>
     request('DELETE', `/admin/${homeId}/penalties/${penId}`),
+
+  // 🔥 BILL (YOU WERE MISSING THIS)
+  sendBill: (homeId, body) =>
+    request('POST', `/admin/${homeId}/bill/send`, body),
 };
