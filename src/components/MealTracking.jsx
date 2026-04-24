@@ -58,30 +58,40 @@ export default function MealTracking() {
   // ADD MEAL
   // ─────────────────────────────
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    try {
-      const meal = await mealApi.add(homeId, {
-        ...formData,
-        mealCount: Number(formData.mealCount) || 0,
-        eggsCount: Number(formData.eggsCount) || 0,
-      });
+  try {
+    // ✅ SUPPORT BOTH NUMBER + "2V 1D"
+    let meals = formData.mealCount;
+    let eggs = formData.eggsCount;
 
-      addMeal(meal);
-
-      setFormData({
-        date: new Date().toISOString().split('T')[0],
-        mealCount: 0,
-        eggsCount: 0,
-      });
-
-      setShowForm(false);
-
-    } catch (err) {
-      alert(err.message);
+    // if string like "2V 1D"
+    if (typeof meals === 'string') {
+      const parsed = parseValue(meals);
+      meals = parsed[0];
+      eggs = parsed[1];
     }
-  };
 
+    const meal = await mealApi.add(homeId, {
+      date: formData.date,
+      mealCount: Number(meals) || 0,
+      eggsCount: Number(eggs) || 0,
+    });
+
+    addMeal(meal);
+
+    setFormData({
+      date: new Date().toISOString().split('T')[0],
+      mealCount: 0,
+      eggsCount: 0,
+    });
+
+    setShowForm(false);
+
+  } catch (err) {
+    alert(err.message);
+  }
+};
   // ─────────────────────────────
   // EDIT
   // ─────────────────────────────
