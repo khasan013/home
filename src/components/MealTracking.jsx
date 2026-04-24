@@ -73,7 +73,7 @@ export default function MealTracking() {
     }
 
     const meal = await mealApi.add(homeId, {
-      date: formData.date,
+      date: new Date(formData.date).toISOString(),
       mealCount: Number(meals) || 0,
       eggsCount: Number(eggs) || 0,
     });
