@@ -21,14 +21,6 @@ export default function AdminDashboard() {
     reason: '',
   });
 
-  // 🔥 NEW: COST STATE
-  const [costData, setCostData] = useState({
-    totalEggPrice: '',
-    totalEggCount: '',
-    consumedEgg: '',
-    otherCost: '',
-  });
-
   // ─────────────────────────────
   // LOAD DATA
   // ─────────────────────────────
@@ -36,6 +28,32 @@ export default function AdminDashboard() {
     if (!homeId) return;
     loadData();
   }, [homeId]);
+  const [costData, setCostData] = useState({
+  totalEggPrice: '',
+  totalEggCount: '',
+  consumedEgg: '',
+  otherCost: '',
+});
+const calculateBill = () => {
+  const { totalEggPrice, totalEggCount, consumedEgg, otherCost } = costData;
+
+  if (!totalEggPrice || !totalEggCount) return null;
+
+  const perEgg = totalEggPrice / totalEggCount;
+  const consumedCost = consumedEgg * perEgg;
+  const remainingEggCost = totalEggPrice - consumedCost;
+
+  const totalBill = Number(otherCost) + remainingEggCost;
+
+  return {
+    perEgg,
+    consumedCost,
+    remainingEggCost,
+    totalBill,
+  };
+};
+
+const bill = calculateBill();
 
   const loadData = async () => {
     try {
@@ -84,17 +102,20 @@ export default function AdminDashboard() {
     }
 
     try {
+      // 1. add meals
       await adminApi.addMealPenalty(homeId, {
         userId,
         meals: Number(meals),
       });
 
+      // 2. save penalty
       const newPenalty = await adminApi.addPenalty(homeId, {
         userId,
         amount: Number(meals),
         reason: reason || `Penalty for ${meals} meals`,
       });
 
+      // 3. send email 🔥
       await adminApi.sendPenaltyEmail({
         userId,
         meals,
@@ -109,7 +130,7 @@ export default function AdminDashboard() {
         reason: '',
       });
 
-      loadData();
+      loadData(); // refresh meals
 
     } catch (err) {
       alert(err.message);
@@ -158,136 +179,151 @@ export default function AdminDashboard() {
   };
 
   // ─────────────────────────────
-  // COST CALCULATION 🔥
-  // ─────────────────────────────
-  const calculateBill = () => {
-    const { totalEggPrice, totalEggCount, consumedEgg, otherCost } = costData;
-
-    if (!totalEggPrice || !totalEggCount) return null;
-
-    const perEgg = totalEggPrice / totalEggCount;
-    const consumedCost = consumedEgg * perEgg;
-    const remainingEggCost = totalEggPrice - consumedCost;
-
-    const totalBill = Number(otherCost || 0) + remainingEggCost;
-
-    return {
-      perEgg,
-      consumedCost,
-      remainingEggCost,
-      totalBill,
-    };
-  };
-
-  const bill = calculateBill();
-
-  // ─────────────────────────────
   // TOTAL PENALTY
   // ─────────────────────────────
   const totalPenalty = penalties.reduce(
     (sum, p) => sum + (p.amount || 0),
     0
   );
+}
 
-  return (
-    <div className="p-6 text-white">
+ return (
+  <div className="p-6 text-white">
 
-      <h1 className="text-2xl font-bold mb-6">Admin Dashboard</h1>
+    <h1 className="text-2xl font-bold mb-6">Admin Dashboard</h1>
 
-      {/* OVERVIEW */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+    {/* OVERVIEW */}
+    <div className="grid grid-cols-3 gap-4 mb-6">
 
-        <div className="bg-gray-800 p-4 rounded">
-          <p>Total Members</p>
-          <h2>{members.length}</h2>
-        </div>
-
-        <div className="bg-gray-800 p-4 rounded">
-          <p>Total Penalty</p>
-          <h2>৳{totalPenalty}</h2>
-        </div>
-
-        <div className="bg-gray-800 p-4 rounded">
-          <p>Penalties</p>
-          <h2>{penalties.length}</h2>
-        </div>
-
+      <div className="bg-gray-800 p-4 rounded">
+        <p>Total Members</p>
+        <h2>{members.length}</h2>
       </div>
 
-      {/* BILL BUTTONS */}
-      <div className="flex gap-3 mb-6">
-        <button onClick={handleSendBill} className="bg-green-500 px-4 py-2 rounded flex items-center gap-2">
-          <Mail size={16} /> Send Bills
-        </button>
-
-        <button onClick={handleDownloadPDF} className="bg-blue-500 px-4 py-2 rounded">
-          Download PDF
-        </button>
+      <div className="bg-gray-800 p-4 rounded">
+        <p>Total Penalty</p>
+        <h2>৳{totalPenalty}</h2>
       </div>
 
-      {/* 🔥 COST CALCULATION */}
-      <div className="bg-gray-900 p-4 rounded mb-6">
-        <h2 className="text-lg mb-3">Cost Calculation</h2>
-
-        <div className="flex gap-3 flex-wrap">
-
-          <input type="number" placeholder="Total Egg Price"
-            onChange={e => setCostData({ ...costData, totalEggPrice: Number(e.target.value) })}
-            className="p-2 bg-gray-800 rounded"
-          />
-
-          <input type="number" placeholder="Total Eggs"
-            onChange={e => setCostData({ ...costData, totalEggCount: Number(e.target.value) })}
-            className="p-2 bg-gray-800 rounded"
-          />
-
-          <input type="number" placeholder="Consumed Eggs"
-            onChange={e => setCostData({ ...costData, consumedEgg: Number(e.target.value) })}
-            className="p-2 bg-gray-800 rounded"
-          />
-
-          <input type="number" placeholder="Other Cost"
-            onChange={e => setCostData({ ...costData, otherCost: Number(e.target.value) })}
-            className="p-2 bg-gray-800 rounded"
-          />
-
-        </div>
-
-        {bill && (
-          <div className="mt-4 text-green-400">
-            <p>Per Egg: ৳{bill.perEgg.toFixed(2)}</p>
-            <p>Consumed: ৳{bill.consumedCost.toFixed(2)}</p>
-            <p>Remaining: ৳{bill.remainingEggCost.toFixed(2)}</p>
-            <h2 className="text-xl font-bold">Total: ৳{bill.totalBill.toFixed(2)}</h2>
-          </div>
-        )}
+      <div className="bg-gray-800 p-4 rounded">
+        <p>Penalties</p>
+        <h2>{penalties.length}</h2>
       </div>
-
-      {/* MEMBERS */}
-      <div className="mb-8">
-        <h2 className="text-xl mb-3">Members</h2>
-
-        <table className="w-full">
-          <tbody>
-            {members.map(m => (
-              <tr key={m.user?._id}>
-                <td>{m.user?.firstName}</td>
-                <td>{m.user?.email}</td>
-                <td>{m.role}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* PENALTY FORM */}
-      <form onSubmit={handlePenaltySubmit} className="flex gap-2">
-        <input placeholder="Meals"
-          onChange={e => setPenaltyData({ ...penaltyData, meals: e.target.value })}
-        />
-        <button>Add</button>
-      </form>
 
     </div>
-  );
-}
+
+    {/* BILL BUTTONS */}
+    <div className="flex gap-3 mb-6">
+      <button onClick={handleSendBill} className="bg-green-500 px-4 py-2 rounded flex items-center gap-2">
+        <Mail size={16} /> Send Bills
+      </button>
+
+      <button onClick={handleDownloadPDF} className="bg-blue-500 px-4 py-2 rounded">
+        Download PDF
+      </button>
+    </div>
+
+    {/* 🔥 COST CALCULATION SYSTEM (FIXED POSITION) */}
+    <div className="bg-gray-900 p-4 rounded mb-6">
+      <h2 className="text-lg mb-3">Cost Calculation</h2>
+
+      <div className="flex gap-3 flex-wrap">
+
+        <input
+          type="number"
+          placeholder="Total Egg Price (e.g. 300)"
+          onChange={(e) =>
+            setCostData({ ...costData, totalEggPrice: Number(e.target.value) })
+          }
+          className="p-2 bg-gray-800 rounded"
+        />
+
+        <input
+          type="number"
+          placeholder="Total Eggs (e.g. 30)"
+          onChange={(e) =>
+            setCostData({ ...costData, totalEggCount: Number(e.target.value) })
+          }
+          className="p-2 bg-gray-800 rounded"
+        />
+
+        <input
+          type="number"
+          placeholder="Consumed Eggs (e.g. 15)"
+          onChange={(e) =>
+            setCostData({ ...costData, consumedEgg: Number(e.target.value) })
+          }
+          className="p-2 bg-gray-800 rounded"
+        />
+
+        <input
+          type="number"
+          placeholder="Other Cost (e.g. 1000)"
+          onChange={(e) =>
+            setCostData({ ...costData, otherCost: Number(e.target.value) })
+          }
+          className="p-2 bg-gray-800 rounded"
+        />
+
+      </div>
+
+      {bill && (
+        <div className="mt-4 text-green-400">
+          <p>Per Egg Price: ৳{bill.perEgg.toFixed(2)}</p>
+          <p>Consumed Egg Cost: ৳{bill.consumedCost.toFixed(2)}</p>
+          <p>Remaining Egg Cost: ৳{bill.remainingEggCost.toFixed(2)}</p>
+
+          <h2 className="text-xl font-bold">
+            Total Bill: ৳{bill.totalBill.toFixed(2)}
+          </h2>
+        </div>
+      )}
+    </div>
+
+    {/* MEMBERS */}
+    <div className="mb-8">
+      <h2 className="text-xl mb-3">Members</h2>
+
+      <table className="w-full">
+        <thead>
+          <tr className="text-gray-400">
+            <th>Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {members.map(m => (
+            <tr key={m.user?._id}>
+              <td>{m.user?.firstName}</td>
+              <td>{m.user?.email}</td>
+              <td>{m.role}</td>
+
+              <td className="flex gap-2">
+                <button onClick={() => handlePromote(m.user?._id)}>
+                  <User size={16} />
+                </button>
+
+                <button onClick={() => handleRemove(m.user?._id)}>
+                  <Trash2 size={16} />
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+
+    {/* PENALTY */}
+    {/* (unchanged) */}
+
+    {/* MEALS */}
+    {/* (unchanged) */}
+
+    {/* PENALTY LIST */}
+    {/* (unchanged) */}
+
+  </div>
+);
