@@ -1,5 +1,5 @@
 // src/components/HomeDashboard.jsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, PieChart, Pie, Cell,
@@ -12,30 +12,90 @@ import { reportApi, homeApi, expenseApi } from '../api';
 
 const COLORS = ['#8b5cf6', '#ec4899', '#06b6d4', '#f59e0b'];
 
+// ── Auto-refresh interval (ms) ──
+const REFRESH_INTERVAL = 30_000; // 30 seconds
+
 export default function HomeDashboard() {
-  const { currentHome, members, setMembers, meals, expenses, setExpenses, report, setReport } = useHome();
+  const { currentHome, setCurrentHome, members, setMembers, meals, setMeals, expenses, setExpenses, report, setReport } = useHome();
   const [activeTab, setActiveTab] = useState('overview');
   const homeId = currentHome?._id;
+  const intervalRef = useRef(null);
 
- 
-useEffect(() => {
-  if (!homeId) return;
+  // ── Core data-fetch function (called on mount + every interval) ──
+  const fetchAllData = async (id) => {
+    if (!id) return;
 
-  // existing
-  reportApi.get(homeId)
-    .then(setReport)
-    .catch(console.error);
+    try {
+      // Re-fetch home details (keeps currentHome fresh after idle)
+      const freshHome = await homeApi.getById(id);
+      if (freshHome) {
+        setCurrentHome(freshHome);
+        setMembers(freshHome.members);
+        // Persist so sidebar can restore it on next mount
+        localStorage.setItem('lastHomeId', id);
+      }
+    } catch (err) {
+      console.error('Failed to refresh home:', err);
+    }
 
-  if (currentHome?.members) {
-    setMembers(currentHome.members);
-  }
+    try {
+      const [freshReport, freshExpenses] = await Promise.all([
+        reportApi.get(id),
+        expenseApi.getAll(id),
+      ]);
+      if (freshReport)  setReport(freshReport);
+      if (freshExpenses) setExpenses(freshExpenses);
+    } catch (err) {
+      console.error('Failed to refresh report/expenses:', err);
+    }
+  };
 
-  // 🔥 ADD THIS (THIS IS THE FIX)
-  expenseApi.getAll(homeId)
-    .then(setExpenses)   // ⚠️ make sure setExpenses is available from context
-    .catch(console.error);
+  // ── On homeId change: fetch immediately + start interval ──
+  useEffect(() => {
+    if (!homeId) return;
 
-}, [homeId]);
+    fetchAllData(homeId);
+
+    // Clear any existing interval before starting a new one
+    if (intervalRef.current) clearInterval(intervalRef.current);
+
+    intervalRef.current = setInterval(() => {
+      fetchAllData(homeId);
+    }, REFRESH_INTERVAL);
+
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [homeId]);
+
+  // ── Restore last selected home on mount if currentHome is null ──
+  useEffect(() => {
+    if (currentHome) return; // already set, nothing to do
+
+    const lastId = localStorage.getItem('lastHomeId');
+    if (!lastId) return;
+
+    homeApi.getById(lastId)
+      .then((home) => {
+        if (home) {
+          setCurrentHome(home);
+          setMembers(home.members);
+        }
+      })
+      .catch(console.error);
+  }, []);
+
+  // ── Refresh when tab becomes visible again (user switches back) ──
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && homeId) {
+        fetchAllData(homeId);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [homeId]);
 
   const totalExpense = report?.totalExpense ?? expenses.reduce((s, e) => s + e.amount, 0);
   const totalMeals   = report?.totalMeals   ?? meals.reduce((s, m) => s + m.mealCount, 0);
