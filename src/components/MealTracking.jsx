@@ -4,7 +4,7 @@ import { useHome } from '../context/HomeContext';
 import { mealApi } from '../api';
 
 export default function MealTracking() {
-  const { currentHome, meals, setMeals, addMeal } = useHome();
+  const { currentHome, meals, setMeals } = useHome();
   const homeId = currentHome?._id;
 
   const isAdmin = currentHome?.role === 'admin';
@@ -72,7 +72,7 @@ export default function MealTracking() {
       eggs = parsed[1];
     }
 
-    const meal = await mealApi.add(homeId, {
+    await mealApi.add(homeId, {
       date: new Date(formData.date).toISOString(),
       mealCount: Number(meals) || 0,
       eggsCount: Number(eggs) || 0,
@@ -168,12 +168,12 @@ setMeals(updated);
     <div className="space-y-4">
 
       {/* HEADER */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <h3 className="text-lg font-semibold text-white">Meal Table</h3>
 
         <button
           onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg"
+          className="flex items-center justify-center gap-2 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg shadow-lg shadow-purple-950/30"
         >
           <Plus className="w-4 h-4" /> Add Meal
         </button>
@@ -237,7 +237,7 @@ setMeals(updated);
 
       {/* TABLE */}
       <div className="overflow-x-auto bg-white/5 border border-white/10 rounded-xl">
-        <table className="w-full text-sm text-white">
+        <table className="w-full min-w-[620px] text-sm text-white">
 
           <thead className="bg-white/10">
             <tr>

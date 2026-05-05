@@ -79,8 +79,9 @@ export default function ExpenseTracker() {
           { label: 'Eggs Bought',   value: `${eggQtyTotal} pcs`,          color: '#ec4899' },
         ].map(({ label, value, color }) => (
           <div key={label} style={{
-            background: '#0f172a', border: `1px solid ${color}40`,
-            borderRadius: 12, padding: '14px 20px', minWidth: 150,
+            background: 'linear-gradient(145deg, rgba(15,29,51,0.82), rgba(9,21,38,0.94))', border: `1.5px solid ${color}80`,
+            borderRadius: 24, padding: '14px 20px', minWidth: 150, flex: '1 1 160px',
+            boxShadow: '0 18px 42px rgba(0,0,0,0.22)',
           }}>
             <div style={{ color: '#6b7280', fontSize: 11, textTransform: 'uppercase', letterSpacing: 1 }}>{label}</div>
             <div style={{ color, fontSize: 22, fontWeight: 800, marginTop: 4 }}>{value}</div>
@@ -90,8 +91,9 @@ export default function ExpenseTracker() {
 
       {/* Add form */}
       <div style={{
-        background: '#111827', borderRadius: 14, padding: 20,
-        border: '1px solid #1f2937', marginBottom: 20,
+        background: 'linear-gradient(145deg, rgba(15,29,51,0.82), rgba(9,21,38,0.94))', borderRadius: 28, padding: 20,
+        border: '1.5px solid rgba(61,91,134,0.78)', marginBottom: 20,
+        boxShadow: '0 22px 52px rgba(0,0,0,0.24)',
       }}>
         <h3 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 700, color: '#f8fafc' }}>
           ➕ Add Expense
@@ -101,7 +103,7 @@ export default function ExpenseTracker() {
         )}
         <form onSubmit={handleAdd} style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(180px, 100%), 1fr))',
           gap: 10,
         }}>
           {/* Title */}
@@ -174,7 +176,7 @@ export default function ExpenseTracker() {
       </div>
 
       {/* Expense list */}
-      <div style={{ background: '#111827', borderRadius: 14, border: '1px solid #1f2937', overflow: 'hidden' }}>
+      <div style={{ background: 'rgba(9,21,38,0.88)', borderRadius: 28, border: '1.5px solid rgba(61,91,134,0.78)', overflow: 'hidden', boxShadow: '0 22px 52px rgba(0,0,0,0.24)' }}>
         <div style={{
           borderLeft: '4px solid #6366f1', padding: '12px 20px',
           background: '#0f172a', fontWeight: 700, fontSize: 14, color: '#f1f5f9',
@@ -184,7 +186,8 @@ export default function ExpenseTracker() {
         {expenses.length === 0 ? (
           <p style={{ color: '#6b7280', textAlign: 'center', padding: 40 }}>No expenses yet.</p>
         ) : (
-          <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 13 }}>
+          <div style={{ overflowX: 'auto' }} className="premium-scroll">
+          <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: 680, fontSize: 13 }}>
             <thead>
               <tr style={{ borderBottom: '1px solid #1f2937' }}>
                 {['Title', 'Category', 'Amount', 'Eggs', 'Date', ''].map(h => (
@@ -230,6 +233,7 @@ export default function ExpenseTracker() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

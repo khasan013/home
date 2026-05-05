@@ -16,7 +16,7 @@ const COLORS = ['#8b5cf6', '#ec4899', '#06b6d4', '#f59e0b'];
 const REFRESH_INTERVAL = 30_000; // 30 seconds
 
 export default function HomeDashboard() {
-  const { currentHome, setCurrentHome, members, setMembers, meals, setMeals, expenses, setExpenses, report, setReport } = useHome();
+  const { currentHome, setCurrentHome, members, setMembers, meals, expenses, setExpenses, report, setReport } = useHome();
   const [activeTab, setActiveTab] = useState('overview');
   const homeId = currentHome?._id;
   const intervalRef = useRef(null);
@@ -166,19 +166,20 @@ export default function HomeDashboard() {
   return (
     <div className="space-y-6">
       {/* ── Header Stats (white cards) ── */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        {stats.map(({ label, value, icon, accent, lightBg, textColor }) => (
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
+        {stats.map(({ label, value, icon, accent, lightBg }) => (
           <div
             key={label}
             style={{
-              background: '#ffffff',
-              borderRadius: 16,
+              background: 'linear-gradient(145deg, rgba(15,29,51,0.82), rgba(9,21,38,0.94))',
+              borderRadius: 28,
               padding: '20px 18px',
-              boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
-              borderTop: `4px solid ${accent}`,
+              boxShadow: '0 22px 52px rgba(0,0,0,0.24)',
+              border: `1.5px solid ${accent}80`,
               display: 'flex',
               flexDirection: 'column',
               gap: 6,
+              minWidth: 0,
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -189,17 +190,17 @@ export default function HomeDashboard() {
                 padding: '4px 6px',
                 lineHeight: 1,
               }}>{icon}</span>
-              <p style={{ color: '#6b7280', fontSize: 12, fontWeight: 600, margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <p style={{ color: '#a8b2c6', fontSize: 12, fontWeight: 700, margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 {label}
               </p>
             </div>
-            <p style={{ color: textColor, fontSize: 26, fontWeight: 800, margin: 0 }}>{value}</p>
+            <p style={{ color: '#ffffff', fontSize: 26, fontWeight: 800, margin: 0, wordBreak: 'break-word' }}>{value}</p>
           </div>
         ))}
       </div>
 
       {/* ── Tabs ── */}
-      <div className="flex gap-2 border-b border-white/10">
+      <div className="flex gap-2 border-b border-white/10 overflow-x-auto premium-scroll pb-px">
         {['overview', 'meals', 'expenses', 'members'].map(tab => (
           <button key={tab} onClick={() => setActiveTab(tab)}
             className={`px-4 py-3 font-semibold capitalize transition ${
@@ -214,7 +215,7 @@ export default function HomeDashboard() {
 
       {activeTab === 'overview' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white/5 border border-white/10 rounded-xl p-6 backdrop-blur-sm">
+          <div className="premium-panel p-4 sm:p-6">
             <h3 className="text-lg font-semibold text-white mb-4">Expense Distribution</h3>
             {pieData.length === 0 ? (
               <p className="text-gray-400 text-center py-16">No expense data yet</p>
@@ -231,7 +232,7 @@ export default function HomeDashboard() {
             )}
           </div>
 
-          <div className="bg-white/5 border border-white/10 rounded-xl p-6 backdrop-blur-sm">
+          <div className="premium-panel p-4 sm:p-6">
             <h3 className="text-lg font-semibold text-white mb-4">Recent Meal Trend</h3>
             {barData.length === 0 ? (
               <p className="text-gray-400 text-center py-16">No meal data yet</p>

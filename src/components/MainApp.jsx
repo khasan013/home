@@ -283,23 +283,25 @@ export default function MainApp() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col md:flex-row">
+    <div className="app-shell min-h-screen flex flex-col md:flex-row">
       {/* ── DESKTOP SIDEBAR (hidden on mobile) ── */}
-      <div className="hidden md:flex md:w-64 bg-white/5 border-r border-white/10 backdrop-blur-sm transition-all duration-300 overflow-hidden flex-shrink-0">
-        <SidebarContent {...sidebarProps} />
+      <div className={`hidden md:flex premium-sidebar border-r border-white/10 transition-all duration-300 overflow-hidden flex-shrink-0 ${
+        sidebarOpen ? 'md:w-72' : 'md:w-0'
+      }`}>
+        {sidebarOpen && <SidebarContent {...sidebarProps} />}
       </div>
 
       {/* ── MOBILE OVERLAY ── */}
       {mobileMenuOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-40 md:hidden"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
 
       {/* ── MOBILE SIDEBAR (drawer) ── */}
       <div
-        className={`fixed md:hidden top-0 left-0 h-screen w-64 bg-white/5 border-r border-white/10 backdrop-blur-sm z-50 transform transition-transform duration-300 ${
+        className={`fixed md:hidden top-0 left-0 h-screen w-[82vw] max-w-80 premium-sidebar border-r border-white/10 z-50 transform transition-transform duration-300 ${
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -311,12 +313,12 @@ export default function MainApp() {
       {/* ── Main Content ── */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Bar */}
-        <div className="bg-white/5 border-b border-white/10 backdrop-blur-sm px-4 md:px-6 py-4 flex justify-between items-center">
+        <div className="premium-topbar px-4 md:px-6 py-4 flex justify-between items-center">
           <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
             {/* Mobile Menu Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 hover:bg-white/10 rounded-lg transition">
+              className="md:hidden premium-icon-button">
               {mobileMenuOpen ? (
                 <X className="w-5 h-5 text-white" />
               ) : (
@@ -327,7 +329,7 @@ export default function MainApp() {
             {/* Desktop Sidebar Toggle */}
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="hidden md:block p-2 hover:bg-white/10 rounded-lg transition">
+              className="hidden md:block premium-icon-button">
               <ChevronDown className={`w-5 h-5 text-white transition-transform ${sidebarOpen ? '-rotate-90' : 'rotate-90'}`} />
             </button>
 
@@ -338,7 +340,7 @@ export default function MainApp() {
 
             {/* Invite Code Badge */}
             {currentHome?.inviteCode && (
-              <span className="hidden sm:inline text-xs bg-white/10 text-gray-300 px-2 py-1 rounded font-mono whitespace-nowrap">
+              <span className="hidden sm:inline text-xs bg-emerald-400/10 text-emerald-200 px-2.5 py-1 rounded-full font-mono whitespace-nowrap border border-emerald-300/20">
                 {currentHome.inviteCode}
               </span>
             )}

@@ -1,6 +1,6 @@
 // src/components/MemberManagement.jsx
 import { useState } from 'react';
-import { Plus, Copy, Check, ChevronDown } from 'lucide-react';
+import { Copy, Check } from 'lucide-react';
 import { useHome } from '../context/HomeContext';
 import { homeApi } from '../api';
 
@@ -57,7 +57,7 @@ export default function MemberManagement() {
       <div className="bg-white/5 border border-white/10 rounded-xl p-6 space-y-3">
         <h4 className="text-white font-semibold">🔗 Join a Home</h4>
         <p className="text-gray-400 text-sm">Enter an invite code to join an existing home.</p>
-        <form onSubmit={handleJoin} className="flex gap-3">
+        <form onSubmit={handleJoin} className="flex flex-col sm:flex-row gap-3">
           <input
             type="text"
             maxLength={8}
@@ -87,12 +87,12 @@ export default function MemberManagement() {
             <p className="text-gray-400 text-center py-8">No members yet</p>
           ) : (
             members.map((member) => (
-              <div key={member._id || member.user?._id} className="bg-white/5 border border-white/10 rounded-lg p-4 flex justify-between items-center">
-                <div>
+              <div key={member._id || member.user?._id} className="bg-white/5 border border-white/10 rounded-lg p-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                <div className="min-w-0">
                   <p className="text-white font-semibold">
                     {member.user?.firstName} {member.user?.lastName}
                   </p>
-                  <p className="text-gray-300 text-sm">{member.user?.email}</p>
+                  <p className="text-gray-300 text-sm break-all">{member.user?.email}</p>
                 </div>
                 <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
                   member.role === 'admin'

@@ -35,20 +35,20 @@ export default function ResetPasswordPage({ email, onDone }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-white/20">
+    <div className="auth-screen">
+      <div className="auth-wrap">
+        <div className="auth-card">
 
-          <h1 className="text-3xl font-bold text-white mb-2">
+          <h1 className="auth-title">
             Reset Password
           </h1>
 
-          <p className="text-gray-300 mb-6 text-sm">
+          <p className="auth-subtitle">
             Enter OTP sent to{' '}
-            <span className="text-purple-400 font-semibold">{email}</span>
+            <span className="auth-accent">{email}</span>
           </p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="auth-form">
 
             {/* OTP */}
             <input
@@ -57,7 +57,7 @@ export default function ResetPasswordPage({ email, onDone }) {
               placeholder="Enter OTP"
               value={otp}
               onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-              className="w-full text-center text-xl tracking-widest px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition"
+              className="auth-input auth-otp"
               required
             />
 
@@ -67,20 +67,20 @@ export default function ResetPasswordPage({ email, onDone }) {
               placeholder="New Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 transition"
+              className="auth-input"
               required
             />
 
             {/* Error */}
             {error && (
-              <div className="p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 text-sm">
+              <div className="auth-alert auth-alert-error">
                 {error}
               </div>
             )}
 
             {/* Success */}
             {success && (
-              <div className="p-3 bg-green-500/20 border border-green-500/50 rounded-lg text-green-200 text-sm">
+              <div className="auth-alert auth-alert-success">
                 {success}
               </div>
             )}
@@ -89,7 +89,7 @@ export default function ResetPasswordPage({ email, onDone }) {
             <button
               type="submit"
               disabled={loading || otp.length !== 6}
-              className="w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-lg hover:from-purple-600 hover:to-pink-600 transition transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="auth-primary"
             >
               {loading ? 'Resetting...' : 'Reset Password'}
             </button>

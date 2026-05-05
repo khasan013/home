@@ -33,7 +33,7 @@ async function request(method, path, body = null, auth = true) {
   try {
     data = await res.json();
   } catch {
-    data = null;
+    // Some endpoints may return an empty body.
   }
 
   if (!res.ok) {

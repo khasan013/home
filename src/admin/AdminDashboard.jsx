@@ -1,4 +1,5 @@
 // src/pages/AdminDashboard.jsx
+/* eslint-disable react-hooks/set-state-in-effect */
 //
 // Changes vs previous version:
 //  1. Penalty is stored as a separate record ONLY — it does NOT inject a meal
@@ -17,7 +18,7 @@ import {
   CheckCircle2, XCircle, RefreshCw,
 } from 'lucide-react';
 import { useHome } from '../context/HomeContext';
-import { adminApi, mealApi, expenseApi } from '../api';
+import { adminApi, mealApi } from '../api';
 
 // ── tiny toast ────────────────────────────────────────────
 function Toast({ msg, type, onClose }) {
@@ -43,14 +44,18 @@ function Toast({ msg, type, onClose }) {
 function Card({ title, children, accent = '#6366f1' }) {
   return (
     <div style={{
-      background: '#111827', borderRadius: 14, overflow: 'hidden',
-      border: '1px solid #1f2937', marginBottom: 24,
+      background: 'linear-gradient(145deg, rgba(15,29,51,0.82), rgba(9,21,38,0.94))',
+      borderRadius: 28,
+      overflow: 'hidden',
+      border: '1.5px solid rgba(61,91,134,0.78)',
+      marginBottom: 24,
+      boxShadow: '0 22px 52px rgba(0,0,0,0.24)',
     }}>
       <div style={{
         borderLeft: `4px solid ${accent}`, padding: '14px 20px',
-        background: '#0f172a', fontWeight: 700, fontSize: 15, color: '#f1f5f9',
+        background: 'rgba(8,17,31,0.72)', fontWeight: 700, fontSize: 15, color: '#f1f5f9',
       }}>{title}</div>
-      <div style={{ padding: 20 }}>{children}</div>
+      <div className="premium-scroll" style={{ padding: 20, overflowX: 'auto' }}>{children}</div>
     </div>
   );
 }
@@ -58,10 +63,14 @@ function Card({ title, children, accent = '#6366f1' }) {
 function Stat({ label, value, color = '#6366f1' }) {
   return (
     <div style={{
-      flex: '1 1 140px', background: '#0f172a', borderRadius: 12,
-      padding: '18px 20px', border: '1px solid #1f2937',
+      flex: '1 1 150px',
+      background: 'linear-gradient(145deg, rgba(15,29,51,0.82), rgba(9,21,38,0.94))',
+      borderRadius: 24,
+      padding: '18px 20px',
+      border: `1.5px solid ${color}80`,
+      boxShadow: '0 18px 42px rgba(0,0,0,0.22)',
     }}>
-      <div style={{ color: '#6b7280', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1 }}>{label}</div>
+      <div style={{ color: '#cbd5e1', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 700 }}>{label}</div>
       <div style={{ color, fontSize: 28, fontWeight: 800, marginTop: 6 }}>{value}</div>
     </div>
   );
@@ -376,22 +385,25 @@ const handleSendBill = async (e) => {
   );
 
   return (
-    <div style={{ padding: 24, maxWidth: 900, margin: '0 auto', color: '#f1f5f9', fontFamily: 'system-ui,sans-serif' }}>
+    <div style={{ padding: 'clamp(16px, 3vw, 28px)', width: '100%', maxWidth: 1120, margin: '0 auto', color: '#f1f5f9', fontFamily: 'system-ui,sans-serif' }}>
       <style>{`
         @keyframes spin    { to { transform:rotate(360deg) } }
         @keyframes slideIn { from { transform:translateY(12px);opacity:0 } }
         select option { background:#1f2937; }
-        table { border-collapse:collapse; width:100%; font-size:13px; }
+        table { border-collapse:collapse; width:100%; min-width:680px; font-size:13px; }
         th,td { padding:10px 14px; text-align:left; border-bottom:1px solid #1f2937; }
         th { color:#9ca3af; font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.5px; }
         tr:last-child td { border-bottom:none; }
         tr:hover td { background:#0f172a40; }
         input:focus,select:focus { border-color:#6366f1 !important; }
+        @media (max-width: 640px) {
+          table { min-width:620px; }
+        }
       `}</style>
 
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 24 }}>
         <h1 style={{ fontSize: 26, fontWeight: 800, margin: 0, color: '#f8fafc' }}>Admin Dashboard</h1>
         <button onClick={load} style={{ ...btn('#1f2937'), padding: '8px 14px' }} title="Refresh">
           <RefreshCw size={14} />
@@ -415,7 +427,7 @@ const handleSendBill = async (e) => {
         <form onSubmit={handleSendBill}>
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill,minmax(190px,1fr))',
+            gridTemplateColumns: 'repeat(auto-fit,minmax(min(190px,100%),1fr))',
             gap: 10, marginBottom: 16,
           }}>
             {[
@@ -446,7 +458,7 @@ const handleSendBill = async (e) => {
             <div style={{
               background: '#0f172a', borderRadius: 10, padding: 16, marginBottom: 16,
               border: '1px solid #22c55e40',
-              display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: 12,
+              display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(180px,100%),1fr))', gap: 12,
             }}>
               {[
                 ['Per Egg',           `৳${billCalc.perEgg.toFixed(2)}`],
@@ -537,7 +549,7 @@ const handleSendBill = async (e) => {
         </p>
         <form onSubmit={handlePenalty} style={{
           display: 'grid', gap: 10,
-          gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))',
+          gridTemplateColumns: 'repeat(auto-fit,minmax(min(200px,100%),1fr))',
         }}>
           <div>
             <label style={{ display: 'block', color: '#9ca3af', fontSize: 12, marginBottom: 4 }}>Member</label>

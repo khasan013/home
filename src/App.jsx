@@ -125,7 +125,6 @@ function TopNav({ screen, setScreen, isMobileMenuOpen, setIsMobileMenuOpen }) {
               background: 'linear-gradient(135deg, #0f172a 0%, #1a2540 100%)',
               borderLeft: '1px solid #1e293b',
               zIndex: 40,
-              display: 'flex',
               flexDirection: 'column',
               paddingTop: '60px',
               animation: 'slideIn 0.3s ease-out',

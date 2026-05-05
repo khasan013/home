@@ -1,6 +1,4 @@
 // src/components/ResponsiveSidebar.jsx
-import React from 'react';
-
 export default function ResponsiveSidebar({ 
   isOpen, 
   onClose, 
