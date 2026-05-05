@@ -18,7 +18,7 @@ import {
   CheckCircle2, XCircle, RefreshCw,
 } from 'lucide-react';
 import { useHome } from '../context/HomeContext';
-import { adminApi, mealApi } from '../api';
+import { adminApi, mealApi, expenseApi } from '../api';
 
 // ── tiny toast ────────────────────────────────────────────
 function Toast({ msg, type, onClose }) {
@@ -92,7 +92,7 @@ function autoBillKey(homeId) {
 
 // ─────────────────────────────────────────────────────────
 export default function AdminDashboard() {
-  const { currentHome, expenses } = useHome();
+  const { currentHome, expenses, setExpenses } = useHome();
   const homeId = currentHome?._id;
 
   const [members,   setMembers]   = useState([]);
@@ -120,25 +120,70 @@ export default function AdminDashboard() {
 
   const toast$ = (msg, type = 'success') => setToast({ msg, type });
 
+  const aggregateBillData = (expenseList, mealList, formValues = {}) => {
+    const eggExpenses = expenseList.filter(e => e.category === 'Egg');
+    const groceryExpenses = expenseList.filter(e => e.category === 'Grocery');
+
+    const defaultEggPrice = eggExpenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+    const defaultEggCount = eggExpenses.reduce((s, e) => s + (Number(e.eggQty) || 0), 0);
+    const defaultOtherCost = groceryExpenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+    const defaultConsumedEgg = mealList
+      .filter(m => !m.isPenalty)
+      .reduce((s, m) => s + (Number(m.eggsCount) || 0), 0);
+    const totalMeals = mealList
+      .filter(m => !m.isPenalty)
+      .reduce((s, m) => s + (Number(m.mealCount) || 0), 0);
+
+    const readNumber = (key, fallback) => {
+      const raw = formValues[key];
+      if (raw === '' || raw === null || raw === undefined) return fallback;
+      const value = Number(raw);
+      return Number.isFinite(value) ? value : fallback;
+    };
+
+    const totalEggPrice = readNumber('totalEggPrice', defaultEggPrice);
+    const totalEggCount = readNumber('totalEggCount', defaultEggCount);
+    const consumedEgg = readNumber('consumedEgg', defaultConsumedEgg);
+    const otherCost = readNumber('otherCost', defaultOtherCost);
+    const perEgg = totalEggCount > 0 ? totalEggPrice / totalEggCount : 0;
+    const consumedCost = consumedEgg * perEgg;
+    const remainingEggCost = totalEggPrice - consumedCost;
+    const totalBill = otherCost + remainingEggCost;
+
+    return {
+      totalEggPrice,
+      totalEggCount,
+      consumedEgg,
+      otherCost,
+      totalMeals,
+      perEgg,
+      consumedCost,
+      remainingEggCost,
+      totalBill,
+    };
+  };
+
   // ── load ──────────────────────────────────────────────
   const load = useCallback(async () => {
     if (!homeId) return;
     setLoading(true);
     try {
-      const [m, p, ml] = await Promise.all([
+      const [m, p, ml, exp] = await Promise.all([
         adminApi.getMembers(homeId),
         adminApi.getPenalties(homeId),
         mealApi.getAll(homeId),
+        expenseApi.getAll(homeId),
       ]);
       setMembers(m);
       setPenalties(p);
       setMeals(ml);
+      setExpenses(exp);
     } catch (err) {
       toast$(err.message, 'error');
     } finally {
       setLoading(false);
     }
-  }, [homeId]);
+  }, [homeId, setExpenses]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -158,9 +203,9 @@ export default function AdminDashboard() {
 
   setCostForm(prev => ({
     ...prev,
-    totalEggPrice: totalEggPrice > 0 ? String(totalEggPrice) : prev.totalEggPrice,
-    totalEggCount: totalEggCount > 0 ? String(totalEggCount) : prev.totalEggCount,
-    otherCost: groceryTotal > 0 ? String(groceryTotal) : prev.otherCost, // ✅ ADD THIS
+    totalEggPrice: String(totalEggPrice),
+    totalEggCount: String(totalEggCount),
+    otherCost: String(groceryTotal),
   }));
 
 }, [expenses]);
@@ -174,54 +219,54 @@ export default function AdminDashboard() {
 
     setCostForm(prev => ({
       ...prev,
-      consumedEgg: consumed > 0 ? String(consumed) : prev.consumedEgg,
+      consumedEgg: String(consumed),
     }));
   }, [meals]);
 
   // ── Bill calculation (live preview) ───────────────────
   const billCalc = (() => {
-    const { totalEggPrice, totalEggCount, consumedEgg, otherCost } = costForm;
-    if (!totalEggPrice || !totalEggCount) return null;
-    const eggPrice        = Number(totalEggPrice);
-    const eggCount        = Number(totalEggCount) || 1;
-    const consumed        = Number(consumedEgg)   || 0;
-    const other           = Number(otherCost)     || 0;
-    const perEgg          = eggPrice / eggCount;
-    const consumedCost    = consumed * perEgg;
-    const remainingEggCost = eggPrice - consumedCost;
-    const totalBill       = other + remainingEggCost;
-    return { perEgg, consumedCost, remainingEggCost, totalBill };
+    const values = aggregateBillData(expenses || [], meals || [], costForm);
+    const hasAnyCost =
+      values.totalEggPrice > 0 ||
+      values.totalEggCount > 0 ||
+      values.consumedEgg > 0 ||
+      values.otherCost > 0;
+    return hasAnyCost ? values : null;
   })();
 
  // ── Send bill ─────────────────────────────────────────
 const doSendBill = useCallback(async (auto = false) => {
-  if (!billCalc) return;
+  if (!homeId) return;
 
   setBusy('bill');
 
   try {
+    const [freshExpenses, freshMeals] = await Promise.all([
+      expenseApi.getAll(homeId),
+      mealApi.getAll(homeId),
+    ]);
+    setExpenses(freshExpenses);
+    setMeals(freshMeals);
+
+    const values = aggregateBillData(freshExpenses, freshMeals, costForm);
+
     const month = new Date().toLocaleDateString('en-US', {
       month: 'long',
       year: 'numeric',
     });
 
-    // ✅ CALCULATE TOTAL MEALS (VERY IMPORTANT)
-    const totalMeals = meals
-      .filter(m => !m.isPenalty)
-      .reduce((s, m) => s + (m.mealCount || 0), 0);
-
-    if (!totalMeals) {
+    if (!values.totalMeals) {
       return toast$('No meals found for this month', 'error');
     }
 
-    // ✅ SEND FULL DATA TO BACKEND
     const result = await adminApi.sendBill(homeId, {
-      ...costForm,
-
-      totalMeals,                    // 🔥 needed for perMeal
-      totalBill: billCalc.totalBill, // 🔥 correct total (remainingEgg + other)
-      perEgg: billCalc.perEgg,       // 🔥 egg cost per piece
-
+      totalEggPrice: values.totalEggPrice,
+      totalEggCount: values.totalEggCount,
+      consumedEgg: values.consumedEgg,
+      otherCost: values.otherCost,
+      totalMeals: values.totalMeals,
+      totalBill: values.totalBill,
+      perEgg: values.perEgg,
       month,
     });
 
@@ -236,7 +281,7 @@ const doSendBill = useCallback(async (auto = false) => {
   } finally {
     setBusy('');
   }
-}, [billCalc, costForm, homeId, meals]); // ✅ add meals dependency
+}, [costForm, homeId, setExpenses]); // ✅ fresh data is loaded before sending
 
 
 
@@ -244,7 +289,7 @@ const handleSendBill = async (e) => {
   e.preventDefault();
 
   if (!billCalc) {
-    return toast$('Enter egg price and count first', 'error');
+    return toast$('Enter a bill cost first', 'error');
   }
 
   doSendBill(false);
