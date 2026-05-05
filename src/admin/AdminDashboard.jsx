@@ -120,6 +120,22 @@ export default function AdminDashboard() {
 
   const toast$ = (msg, type = 'success') => setToast({ msg, type });
 
+  const readNonNegativeInput = (value) => {
+    if (value === '') return '';
+    const numericValue = Number(value);
+    return Number.isFinite(numericValue) && numericValue >= 0 ? value : null;
+  };
+
+  const hasNegativeBillValues = (values) => [
+    values.totalEggPrice,
+    values.totalEggCount,
+    values.consumedEgg,
+    values.otherCost,
+    values.totalMeals,
+    values.perEgg,
+    values.totalBill,
+  ].some(value => !Number.isFinite(Number(value)) || Number(value) < 0);
+
   const aggregateBillData = (expenseList, mealList, formValues = {}) => {
     const eggExpenses = expenseList.filter(e => e.category === 'Egg');
     const groceryExpenses = expenseList.filter(e => e.category === 'Grocery');
@@ -258,6 +274,9 @@ const doSendBill = useCallback(async (auto = false) => {
     if (!values.totalMeals) {
       return toast$('No meals found for this month', 'error');
     }
+    if (hasNegativeBillValues(values)) {
+      return toast$('Bill values cannot be negative. Please fix expenses or bill inputs.', 'error');
+    }
 
     const result = await adminApi.sendBill(homeId, {
       totalEggPrice: values.totalEggPrice,
@@ -353,8 +372,11 @@ const handleSendBill = async (e) => {
   // and does NOT affect the penalised user's meal count.
   const handlePenalty = async (e) => {
     e.preventDefault();
-    const { userId, meals: penMeals, reason } = penForm;
+  const { userId, meals: penMeals, reason } = penForm;
     if (!userId || !penMeals) return toast$('Select user and enter meal count', 'error');
+    if (!Number.isFinite(Number(penMeals)) || Number(penMeals) <= 0) {
+      return toast$('Penalty meals must be greater than 0', 'error');
+    }
     setBusy('penalty');
     try {
       const newPenalty = await adminApi.addPenalty(homeId, {
@@ -393,6 +415,12 @@ const handleSendBill = async (e) => {
   const handleEditMealSubmit = async (e) => {
     e.preventDefault();
     if (!editMeal) return;
+    if (!Number.isFinite(Number(editMeal.mealCount)) || Number(editMeal.mealCount) < 0) {
+      return toast$('Meal count cannot be negative', 'error');
+    }
+    if (!Number.isFinite(Number(editMeal.eggsCount)) || Number(editMeal.eggsCount) < 0) {
+      return toast$('Egg count cannot be negative', 'error');
+    }
     setBusy('editMeal');
     try {
       const updated = await mealApi.update(homeId, editMeal._id, {
@@ -490,9 +518,12 @@ const handleSendBill = async (e) => {
                     ...inp,
                     borderColor: costForm[key] ? '#374151' : '#374151',
                   }}
-                  type="number" placeholder="0"
+                  type="number" min="0" placeholder="0"
                   value={costForm[key]}
-                  onChange={e => setCostForm(p => ({ ...p, [key]: e.target.value }))}
+                  onChange={e => {
+                    const value = readNonNegativeInput(e.target.value);
+                    if (value !== null) setCostForm(p => ({ ...p, [key]: value }));
+                  }}
                 />
               </div>
             ))}
@@ -616,7 +647,10 @@ const handleSendBill = async (e) => {
             <input
               style={inp} type="number" min="1" placeholder="e.g. 5"
               value={penForm.meals}
-              onChange={e => setPenForm(p => ({ ...p, meals: e.target.value }))}
+              onChange={e => {
+                const value = readNonNegativeInput(e.target.value);
+                if (value !== null) setPenForm(p => ({ ...p, meals: value }));
+              }}
             />
           </div>
           <div style={{ gridColumn: '1/-1' }}>
@@ -678,16 +712,22 @@ const handleSendBill = async (e) => {
             <form onSubmit={handleEditMealSubmit} style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
               <div>
                 <label style={{ display: 'block', color: '#9ca3af', fontSize: 12, marginBottom: 4 }}>Meal Count</label>
-                <input style={{ ...inp, width: 120 }} type="number"
+                <input style={{ ...inp, width: 120 }} type="number" min="0"
                   value={editMeal.mealCount}
-                  onChange={e => setEditMeal(p => ({ ...p, mealCount: e.target.value }))}
+                  onChange={e => {
+                    const value = readNonNegativeInput(e.target.value);
+                    if (value !== null) setEditMeal(p => ({ ...p, mealCount: value }));
+                  }}
                 />
               </div>
               <div>
                 <label style={{ display: 'block', color: '#9ca3af', fontSize: 12, marginBottom: 4 }}>Eggs Count</label>
-                <input style={{ ...inp, width: 120 }} type="number"
+                <input style={{ ...inp, width: 120 }} type="number" min="0"
                   value={editMeal.eggsCount}
-                  onChange={e => setEditMeal(p => ({ ...p, eggsCount: e.target.value }))}
+                  onChange={e => {
+                    const value = readNonNegativeInput(e.target.value);
+                    if (value !== null) setEditMeal(p => ({ ...p, eggsCount: value }));
+                  }}
                 />
               </div>
               <button style={btn()} type="submit" disabled={busy === 'editMeal'}>

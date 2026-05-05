@@ -72,6 +72,13 @@ export default function MealTracking() {
       eggs = parsed[1];
     }
 
+    if (!Number.isFinite(Number(meals)) || Number(meals) < 0) {
+      return alert('Meal count cannot be negative.');
+    }
+    if (!Number.isFinite(Number(eggs)) || Number(eggs) < 0) {
+      return alert('Egg count cannot be negative.');
+    }
+
     await mealApi.add(homeId, {
       date: new Date(formData.date).toISOString(),
       mealCount: Number(meals) || 0,
@@ -110,6 +117,15 @@ setMeals(updated);
     if (!item) return;
 
     const [meals, eggs] = parseValue(editValue);
+
+    if (!Number.isFinite(Number(meals)) || Number(meals) < 0) {
+      setEditing(null);
+      return alert('Meal count cannot be negative.');
+    }
+    if (!Number.isFinite(Number(eggs)) || Number(eggs) < 0) {
+      setEditing(null);
+      return alert('Egg count cannot be negative.');
+    }
 
     try {
       await mealApi.update(homeId, item.mealId, {
@@ -203,10 +219,15 @@ setMeals(updated);
               min="0"
               value={formData.mealCount}
               onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  mealCount: e.target.value === '' ? 0 : Number(e.target.value),
-                })
+                {
+                  const value = e.target.value;
+                  if (value === '' || Number(value) >= 0) {
+                    setFormData({
+                      ...formData,
+                      mealCount: value === '' ? 0 : Number(value),
+                    });
+                  }
+                }
               }
               className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white"
             />
@@ -216,10 +237,15 @@ setMeals(updated);
               min="0"
               value={formData.eggsCount}
               onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  eggsCount: e.target.value === '' ? 0 : Number(e.target.value),
-                })
+                {
+                  const value = e.target.value;
+                  if (value === '' || Number(value) >= 0) {
+                    setFormData({
+                      ...formData,
+                      eggsCount: value === '' ? 0 : Number(value),
+                    });
+                  }
+                }
               }
               className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white"
             />

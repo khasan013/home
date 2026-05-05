@@ -10,6 +10,8 @@ import { expenseApi } from '../api';
 
 const CATEGORIES = ['Grocery', 'Egg'];
 
+const isFiniteNumber = (value) => Number.isFinite(Number(value));
+
 export default function ExpenseTracker() {
   const { currentHome, expenses, setExpenses } = useHome();
   const homeId = currentHome?._id;
@@ -27,7 +29,10 @@ export default function ExpenseTracker() {
     e.preventDefault();
     setErr('');
     if (!form.title.trim() || !form.amount) return setErr('Title and amount are required.');
-    if (form.category === 'Egg' && (!form.eggQty || Number(form.eggQty) < 1))
+    if (!isFiniteNumber(form.amount) || Number(form.amount) <= 0) {
+      return setErr('Amount must be greater than 0.');
+    }
+    if (form.category === 'Egg' && (!form.eggQty || !isFiniteNumber(form.eggQty) || Number(form.eggQty) < 1))
       return setErr('Please enter egg quantity.');
 
     setBusy(true);
@@ -136,7 +141,10 @@ export default function ExpenseTracker() {
             <input
               style={inp} type="number" min="0" step="0.01" placeholder="0.00"
               value={form.amount}
-              onChange={e => setForm(p => ({ ...p, amount: e.target.value }))}
+              onChange={e => {
+                const value = e.target.value;
+                if (value === '' || Number(value) >= 0) setForm(p => ({ ...p, amount: value }));
+              }}
             />
           </div>
 
@@ -150,7 +158,10 @@ export default function ExpenseTracker() {
                 style={{ ...inp, borderColor: '#f59e0b80' }}
                 type="number" min="1" placeholder="e.g. 30"
                 value={form.eggQty}
-                onChange={e => setForm(p => ({ ...p, eggQty: e.target.value }))}
+                onChange={e => {
+                  const value = e.target.value;
+                  if (value === '' || Number(value) >= 0) setForm(p => ({ ...p, eggQty: value }));
+                }}
               />
             </div>
           )}
