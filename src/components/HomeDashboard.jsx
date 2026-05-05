@@ -8,7 +8,7 @@ import { useHome } from '../context/HomeContext';
 import MealTracking     from './MealTracking';
 import ExpenseTracker   from './ExpenseTracker';
 import MemberManagement from './MemberManagement';
-import { reportApi, homeApi, expenseApi } from '../api';
+import { reportApi, homeApi, expenseApi, mealApi } from '../api';
 
 const COLORS = ['#8b5cf6', '#ec4899', '#06b6d4', '#f59e0b'];
 
@@ -16,7 +16,7 @@ const COLORS = ['#8b5cf6', '#ec4899', '#06b6d4', '#f59e0b'];
 const REFRESH_INTERVAL = 30_000; // 30 seconds
 
 export default function HomeDashboard() {
-  const { currentHome, setCurrentHome, members, setMembers, meals, expenses, setExpenses, report, setReport } = useHome();
+  const { currentHome, setCurrentHome, members, setMembers, meals, setMeals, expenses, setExpenses, report, setReport } = useHome();
   const [activeTab, setActiveTab] = useState('overview');
   const homeId = currentHome?._id;
   const intervalRef = useRef(null);
@@ -39,12 +39,14 @@ export default function HomeDashboard() {
     }
 
     try {
-      const [freshReport, freshExpenses] = await Promise.all([
+      const [freshReport, freshExpenses, freshMeals] = await Promise.all([
         reportApi.get(id),
         expenseApi.getAll(id),
+        mealApi.getAll(id),
       ]);
       if (freshReport)  setReport(freshReport);
       if (freshExpenses) setExpenses(freshExpenses);
+      if (freshMeals) setMeals(freshMeals);
     } catch (err) {
       console.error('Failed to refresh report/expenses:', err);
     }
