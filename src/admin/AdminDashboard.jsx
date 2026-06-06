@@ -581,7 +581,7 @@ const handleSendBill = async (e) => {
         ) : (
           <table>
             <thead>
-              <tr><th>Month</th><th>Total</th><th>Per Meal</th><th>Sent</th><th>Date</th></tr>
+              <tr><th>Month</th><th>Total</th><th>Per Meal</th><th>Everyone's Bill</th><th>Sent</th><th>Date</th></tr>
             </thead>
             <tbody>
               {bills.map(bill => (
@@ -589,6 +589,13 @@ const handleSendBill = async (e) => {
                   <td style={{ fontWeight: 700 }}>{bill.month}</td>
                   <td>৳{Number(bill.totalBill || 0).toFixed(2)}</td>
                   <td>৳{Number(bill.perMeal || 0).toFixed(2)}</td>
+                  <td style={{ color: '#cbd5e1', fontSize: 12 }}>
+                    {(bill.breakdown || []).map(member => (
+                      <div key={member.userId || member.email || member.name}>
+                        {member.name || member.email}: ৳{Number(member.share || 0).toFixed(2)}
+                      </div>
+                    ))}
+                  </td>
                   <td>{bill.sentCount || 0}</td>
                   <td style={{ color: '#9ca3af', fontSize: 12 }}>
                     {bill.createdAt ? new Date(bill.createdAt).toLocaleString() : '—'}
