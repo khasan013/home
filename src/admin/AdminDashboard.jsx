@@ -98,6 +98,7 @@ export default function AdminDashboard() {
   const [members,   setMembers]   = useState([]);
   const [penalties, setPenalties] = useState([]);
   const [meals,     setMeals]     = useState([]);
+  const [bills,     setBills]     = useState([]);
   const [loading,   setLoading]   = useState(true);
   const [busy,      setBusy]      = useState('');
   const [toast,     setToast]     = useState(null);
@@ -184,16 +185,18 @@ export default function AdminDashboard() {
     if (!homeId) return;
     setLoading(true);
     try {
-      const [m, p, ml, exp] = await Promise.all([
+      const [m, p, ml, exp, billHistory] = await Promise.all([
         adminApi.getMembers(homeId),
         adminApi.getPenalties(homeId),
         mealApi.getAll(homeId),
         expenseApi.getAll(homeId),
+        adminApi.getBills(homeId),
       ]);
       setMembers(m);
       setPenalties(p);
       setMeals(ml);
       setExpenses(exp);
+      setBills(billHistory || []);
     } catch (err) {
       toast$(err.message, 'error');
     } finally {
@@ -290,6 +293,9 @@ const doSendBill = useCallback(async (auto = false) => {
     });
 
     toast$(auto ? `Auto-bill sent for ${month}` : result.message);
+    if (result.bill) {
+      setBills(prev => [result.bill, ...prev.filter(b => b._id !== result.bill._id)]);
+    }
 
     if (auto) {
       localStorage.setItem(autoBillKey(homeId), '1');
@@ -567,6 +573,31 @@ const handleSendBill = async (e) => {
             Calculate &amp; Send Bills to All Members
           </button>
         </form>
+      </Card>
+
+      <Card title="Bill History" accent="#38bdf8">
+        {bills.length === 0 ? (
+          <div style={{ color: '#9ca3af', fontSize: 14 }}>No bills sent yet.</div>
+        ) : (
+          <table>
+            <thead>
+              <tr><th>Month</th><th>Total</th><th>Per Meal</th><th>Sent</th><th>Date</th></tr>
+            </thead>
+            <tbody>
+              {bills.map(bill => (
+                <tr key={bill._id}>
+                  <td style={{ fontWeight: 700 }}>{bill.month}</td>
+                  <td>৳{Number(bill.totalBill || 0).toFixed(2)}</td>
+                  <td>৳{Number(bill.perMeal || 0).toFixed(2)}</td>
+                  <td>{bill.sentCount || 0}</td>
+                  <td style={{ color: '#9ca3af', fontSize: 12 }}>
+                    {bill.createdAt ? new Date(bill.createdAt).toLocaleString() : '—'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </Card>
 
       {/* ── MEMBERS ── */}

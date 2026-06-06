@@ -1,10 +1,12 @@
 // src/components/MainApp.jsx - Mobile Responsive with Search to Join Home
 import { useState, useEffect } from 'react';
-import { Home, LogOut, Users, TrendingUp, Settings, ChevronDown, Plus, AlertCircle, Menu, X, Search, Loader } from 'lucide-react';
+import { Home, LogOut, Users, TrendingUp, Settings, ChevronDown, Plus, AlertCircle, Menu, X, Search, Loader, Megaphone, Phone } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useHome } from '../context/HomeContext';
 import { homeApi } from '../api';
 import HomeDashboard from './HomeDashboard';
+import NoticeBoard from './NoticeBoard';
+import EmergencyContacts from './EmergencyContacts';
 
 // ── CRITICAL FIX: SidebarContent must be defined OUTSIDE MainApp ──
 // When defined inside, React treats it as a brand-new component type on every
@@ -27,6 +29,8 @@ function SidebarContent({
     { icon: Home,       label: 'Dashboard' },
     { icon: TrendingUp, label: 'Analytics' },
     { icon: Users,      label: 'Members'   },
+    { icon: Megaphone,  label: 'Notice Board' },
+    { icon: Phone,      label: 'Emergency Contacts' },
     { icon: Settings,   label: 'Settings'  },
   ];
 
@@ -350,7 +354,13 @@ export default function MainApp() {
         {/* Content */}
         <div className="flex-1 overflow-auto p-4 md:p-6">
           {currentHome ? (
-            <HomeDashboard />
+            activeNav === 'Notice Board' ? (
+              <NoticeBoard />
+            ) : activeNav === 'Emergency Contacts' ? (
+              <EmergencyContacts />
+            ) : (
+              <HomeDashboard activeNav={activeNav} />
+            )
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
               <AlertCircle className="w-12 h-12 md:w-16 md:h-16 text-gray-600" />

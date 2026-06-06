@@ -149,4 +149,29 @@ export const adminApi = {
   // 🔥 BILL (YOU WERE MISSING THIS)
   sendBill: (homeId, body) =>
     request('POST', `/admin/${homeId}/bill/send`, body),
+
+  getBills: (homeId) =>
+    request('GET', `/admin/${homeId}/bills`),
+
+  getBill: (homeId, billId) =>
+    request('GET', `/admin/${homeId}/bills/${billId}`),
+};
+
+export const noticeApi = {
+  create: (body) =>
+    request('POST', '/notices', body),
+
+  getAll: (homeId) =>
+    request('GET', `/notices/${homeId}`),
+
+  remove: (noticeId) =>
+    request('DELETE', `/notices/${noticeId}`),
+};
+
+export const emergencyContactApi = {
+  get: (homeId) =>
+    request('GET', `/emergency-contacts?homeId=${encodeURIComponent(homeId)}`),
+
+  update: (homeId, body) =>
+    request('PUT', '/emergency-contacts', { ...body, homeId }),
 };
