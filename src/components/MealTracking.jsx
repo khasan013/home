@@ -215,7 +215,7 @@ setMeals(updated);
 
             <input
               type="number"
-              step="0.25"
+              step="any"
               min="0"
               value={formData.mealCount}
               onChange={(e) =>

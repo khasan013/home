@@ -524,7 +524,7 @@ const handleSendBill = async (e) => {
                     ...inp,
                     borderColor: costForm[key] ? '#374151' : '#374151',
                   }}
-                  type="number" min="0" placeholder="0"
+                  type="number" min="0" step="any" placeholder="0"
                   value={costForm[key]}
                   onChange={e => {
                     const value = readNonNegativeInput(e.target.value);
@@ -676,7 +676,7 @@ const handleSendBill = async (e) => {
           <div>
             <label style={{ display: 'block', color: '#9ca3af', fontSize: 12, marginBottom: 4 }}>Penalty Meals</label>
             <input
-              style={inp} type="number" min="1" placeholder="e.g. 5"
+              style={inp} type="number" min="0.01" step="any" placeholder="e.g. 0.5"
               value={penForm.meals}
               onChange={e => {
                 const value = readNonNegativeInput(e.target.value);
@@ -743,7 +743,7 @@ const handleSendBill = async (e) => {
             <form onSubmit={handleEditMealSubmit} style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
               <div>
                 <label style={{ display: 'block', color: '#9ca3af', fontSize: 12, marginBottom: 4 }}>Meal Count</label>
-                <input style={{ ...inp, width: 120 }} type="number" min="0"
+                <input style={{ ...inp, width: 120 }} type="number" min="0" step="any"
                   value={editMeal.mealCount}
                   onChange={e => {
                     const value = readNonNegativeInput(e.target.value);
@@ -753,7 +753,7 @@ const handleSendBill = async (e) => {
               </div>
               <div>
                 <label style={{ display: 'block', color: '#9ca3af', fontSize: 12, marginBottom: 4 }}>Eggs Count</label>
-                <input style={{ ...inp, width: 120 }} type="number" min="0"
+                <input style={{ ...inp, width: 120 }} type="number" min="0" step="1"
                   value={editMeal.eggsCount}
                   onChange={e => {
                     const value = readNonNegativeInput(e.target.value);
