@@ -15,9 +15,14 @@ const COLORS = ['#8b5cf6', '#ec4899', '#06b6d4', '#f59e0b'];
 // ── Auto-refresh interval (ms) ──
 const REFRESH_INTERVAL = 30_000; // 30 seconds
 
-export default function HomeDashboard() {
+const navTabMap = {
+  Dashboard: 'overview',
+  Members: 'members',
+};
+
+export default function HomeDashboard({ activeNav }) {
   const { currentHome, setCurrentHome, members, setMembers, meals, setMeals, expenses, setExpenses, report, setReport } = useHome();
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState(navTabMap[activeNav] || 'overview');
   const [isCompact, setIsCompact] = useState(window.innerWidth < 640);
   const homeId = currentHome?._id;
   const intervalRef = useRef(null);

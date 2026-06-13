@@ -359,7 +359,7 @@ export default function MainApp() {
             ) : activeNav === 'Emergency Contacts' ? (
               <EmergencyContacts />
             ) : (
-              <HomeDashboard activeNav={activeNav} />
+              <HomeDashboard key={activeNav} activeNav={activeNav} />
             )
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-center space-y-4">

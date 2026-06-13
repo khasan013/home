@@ -87,6 +87,9 @@ export const homeApi = {
     });
   },
 
+  join: (body) =>
+    homeApi.joinByCode(body?.inviteCode),
+
   getInviteCode: (homeId) =>
     request('GET', `/home/${homeId}/invite`),
 };

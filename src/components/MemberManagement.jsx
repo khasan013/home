@@ -1,11 +1,11 @@
 // src/components/MemberManagement.jsx
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Copy, Check } from 'lucide-react';
 import { useHome } from '../context/HomeContext';
 import { homeApi } from '../api';
 
 export default function MemberManagement() {
-  const { members, currentHome } = useHome();
+  const { members, currentHome, meals } = useHome();
   const [copied,     setCopied]     = useState(false);
   const [joinCode,   setJoinCode]   = useState('');
   const [joinError,  setJoinError]  = useState('');
@@ -13,6 +13,21 @@ export default function MemberManagement() {
   const [joinSuccess,setJoinSuccess]= useState('');
 
   const inviteCode = currentHome?.inviteCode || '—';
+
+  const memberUsage = useMemo(() => {
+    return meals.reduce((totals, meal) => {
+      const userId = meal.userId?._id || meal.userId?.id || meal.userId;
+      if (!userId) return totals;
+
+      const key = String(userId);
+      const current = totals[key] || { meals: 0, eggs: 0 };
+      totals[key] = {
+        meals: current.meals + (Number(meal.mealCount) || 0),
+        eggs: current.eggs + (Number(meal.eggsCount) || 0),
+      };
+      return totals;
+    }, {});
+  }, [meals]);
 
   const copyCode = () => {
     navigator.clipboard.writeText(inviteCode);
@@ -86,23 +101,38 @@ export default function MemberManagement() {
           {members.length === 0 ? (
             <p className="text-gray-400 text-center py-8">No members yet</p>
           ) : (
-            members.map((member) => (
-              <div key={member._id || member.user?._id} className="bg-white/5 border border-white/10 rounded-lg p-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+            members.map((member) => {
+              const memberId = member.user?._id || member.user?.id || member.user;
+              const usage = memberUsage[String(memberId)] || { meals: 0, eggs: 0 };
+
+              return (
+              <div key={member._id || memberId} className="bg-white/5 border border-white/10 rounded-lg p-4 flex flex-col gap-4">
                 <div className="min-w-0">
                   <p className="text-white font-semibold">
                     {member.user?.firstName} {member.user?.lastName}
                   </p>
                   <p className="text-gray-300 text-sm break-all">{member.user?.email}</p>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                <span className={`self-start px-3 py-1 rounded-full text-xs font-semibold ${
                   member.role === 'admin'
                     ? 'bg-purple-500/30 text-purple-200'
                     : 'bg-gray-500/30 text-gray-200'
                 }`}>
                   {member.role === 'admin' ? '👑 Admin' : 'Member'}
                 </span>
+                <div className="grid grid-cols-2 gap-3 sm:col-span-2">
+                  <div className="rounded-lg border border-white/10 bg-white/5 px-4 py-3">
+                    <p className="text-xs font-semibold uppercase text-gray-400">Meals Consumed</p>
+                    <p className="mt-1 text-xl font-bold text-white">{usage.meals}</p>
+                  </div>
+                  <div className="rounded-lg border border-white/10 bg-white/5 px-4 py-3">
+                    <p className="text-xs font-semibold uppercase text-gray-400">Eggs Consumed</p>
+                    <p className="mt-1 text-xl font-bold text-white">{usage.eggs}</p>
+                  </div>
+                </div>
               </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>
