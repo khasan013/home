@@ -281,7 +281,7 @@ const doSendBill = useCallback(async (auto = false) => {
       return toast$('Bill values cannot be negative. Please fix expenses or bill inputs.', 'error');
     }
 
-    const result = await adminApi.sendBill(homeId, {
+    const billPayload = {
       totalEggPrice: values.totalEggPrice,
       totalEggCount: values.totalEggCount,
       consumedEgg: values.consumedEgg,
@@ -290,12 +290,32 @@ const doSendBill = useCallback(async (auto = false) => {
       totalBill: values.totalBill,
       perEgg: values.perEgg,
       month,
+    };
+
+    console.log('BILL SEND FLOW: frontend request prepared', {
+      homeId,
+      billPayload,
     });
 
-    toast$(auto ? `Auto-bill queued for ${month}` : result.message);
+    const result = await adminApi.sendBill(homeId, billPayload);
+
+    console.log('BILL SEND FLOW: frontend response received', {
+      billId: result.bill?._id,
+      deliveryStatus: result.bill?.deliveryStatus,
+      sentCount: result.bill?.sentCount,
+      failedCount: result.bill?.failedCount,
+      queued: result.queued,
+    });
+
     if (result.bill) {
       setBills(prev => [result.bill, ...prev.filter(b => b._id !== result.bill._id)]);
     }
+
+    if (result.bill?.deliveryStatus === 'failed') {
+      return toast$('Bill generated, but email delivery failed. Check backend email logs.', 'error');
+    }
+
+    toast$(auto ? `Auto-bill queued for ${month}` : result.message);
 
     if (!auto) {
       setTimeout(() => {
