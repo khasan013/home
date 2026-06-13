@@ -17,6 +17,14 @@ export const HomeProvider = ({ children }) => {
   const addExpense = (expense) => setExpenses(prev => [expense, ...prev]);
   const removeMeal = (id)      => setMeals(prev    => prev.filter(m => m._id !== id));
   const removeExpense = (id)   => setExpenses(prev => prev.filter(e => e._id !== id));
+  const resetHomeState = () => {
+    setCurrentHome(null);
+    setHomes([]);
+    setMembers([]);
+    setMeals([]);
+    setExpenses([]);
+    setReport(null);
+  };
 
   return (
     <HomeContext.Provider value={{
@@ -26,6 +34,7 @@ export const HomeProvider = ({ children }) => {
       meals,       setMeals,       addMeal,    removeMeal,
       expenses,    setExpenses,    addExpense, removeExpense,
       report,      setReport,
+      resetHomeState,
     }}>
       {children}
     </HomeContext.Provider>

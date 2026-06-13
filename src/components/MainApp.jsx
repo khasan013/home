@@ -186,7 +186,9 @@ function SidebarContent({
 
 export default function MainApp() {
   const { user, logout }               = useAuth();
-  const { homes, setHomes, currentHome, setCurrentHome } = useHome();
+  const {
+    homes, setHomes, currentHome, setCurrentHome, resetHomeState,
+  } = useHome();
   const [sidebarOpen,  setSidebarOpen]  = useState(window.innerWidth >= 768);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showNewHome,  setShowNewHome]  = useState(false);
@@ -205,11 +207,28 @@ export default function MainApp() {
   useEffect(() => {
     homeApi.getAll()
       .then(data => {
-        setHomes(data);
-        if (data.length > 0 && !currentHome) setCurrentHome(data[0]);
+        const userHomes = Array.isArray(data) ? data : [];
+        const storageKey = user?.userId ? `lastHomeId:${user.userId}` : null;
+        const savedHomeId = storageKey ? localStorage.getItem(storageKey) : null;
+        const selectedHome = userHomes.find(home => home._id === savedHomeId)
+          || userHomes[0]
+          || null;
+
+        setHomes(userHomes);
+        setCurrentHome(selectedHome);
       })
       .catch(console.error);
-  }, []);
+  }, [user?.userId, setHomes, setCurrentHome]);
+
+  useEffect(() => {
+    if (!user?.userId || !currentHome?._id) return;
+    localStorage.setItem(`lastHomeId:${user.userId}`, currentHome._id);
+  }, [user?.userId, currentHome?._id]);
+
+  const handleLogout = () => {
+    resetHomeState();
+    logout();
+  };
 
   // Handle responsive sidebar
   useEffect(() => {
@@ -272,7 +291,7 @@ export default function MainApp() {
 
   // Shared props passed down to SidebarContent
   const sidebarProps = {
-    user, logout,
+    user, logout: handleLogout,
     homes, currentHome, setCurrentHome,
     showJoinForm, setShowJoinForm,
     searchCode, setSearchCode,
