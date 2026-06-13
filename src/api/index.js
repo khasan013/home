@@ -3,8 +3,9 @@
 // All backend calls in one place
 // ============================================================
 
-const BASE_URL =
-  import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const BASE_URL = (
+  import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+).trim().replace(/\/+$/, '');
 
 // ── Token helpers ─────────────────────────────────────────
 export const getToken = () => localStorage.getItem('token');
@@ -37,11 +38,14 @@ async function request(method, path, body = null, auth = true) {
   }
 
   if (!res.ok) {
-    throw new Error(
+    const error = new Error(
       data?.message ||
       data?.error ||
       `Request failed (${res.status})`
     );
+    error.status = res.status;
+    error.data = data;
+    throw error;
   }
 
   return data;

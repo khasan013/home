@@ -311,10 +311,6 @@ const doSendBill = useCallback(async (auto = false) => {
       setBills(prev => [result.bill, ...prev.filter(b => b._id !== result.bill._id)]);
     }
 
-    if (result.bill?.deliveryStatus === 'failed') {
-      return toast$('Bill generated, but email delivery failed. Check backend email logs.', 'error');
-    }
-
     toast$(auto ? `Auto-bill queued for ${month}` : result.message);
 
     if (!auto) {
@@ -330,6 +326,10 @@ const doSendBill = useCallback(async (auto = false) => {
     }
 
   } catch (err) {
+    const failedBill = err.data?.bill;
+    if (failedBill) {
+      setBills(prev => [failedBill, ...prev.filter(b => b._id !== failedBill._id)]);
+    }
     toast$(err.message, 'error');
   } finally {
     setBusy('');
