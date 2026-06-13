@@ -292,9 +292,17 @@ const doSendBill = useCallback(async (auto = false) => {
       month,
     });
 
-    toast$(auto ? `Auto-bill sent for ${month}` : result.message);
+    toast$(auto ? `Auto-bill queued for ${month}` : result.message);
     if (result.bill) {
       setBills(prev => [result.bill, ...prev.filter(b => b._id !== result.bill._id)]);
+    }
+
+    if (!auto) {
+      setTimeout(() => {
+        adminApi.getBills(homeId)
+          .then(setBills)
+          .catch(console.error);
+      }, 5000);
     }
 
     if (auto) {
@@ -306,7 +314,7 @@ const doSendBill = useCallback(async (auto = false) => {
   } finally {
     setBusy('');
   }
-}, [costForm, homeId, setExpenses]); // ✅ fresh data is loaded before sending
+}, [costForm, homeId, setBills, setExpenses, setMeals]); // fresh data is loaded before sending
 
 
 
@@ -570,7 +578,9 @@ const handleSendBill = async (e) => {
               ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
               : <Send size={14} />
             }
-            Calculate &amp; Send Bills to All Members
+            {busy === 'bill'
+              ? 'Queuing Bills...'
+              : 'Calculate & Send Bills Now'}
           </button>
         </form>
       </Card>
@@ -581,7 +591,7 @@ const handleSendBill = async (e) => {
         ) : (
           <table>
             <thead>
-              <tr><th>Month</th><th>Total</th><th>Per Meal</th><th>Everyone's Bill</th><th>Sent</th><th>Date</th></tr>
+              <tr><th>Month</th><th>Total</th><th>Per Meal</th><th>Everyone's Bill</th><th>Delivery</th><th>Date</th></tr>
             </thead>
             <tbody>
               {bills.map(bill => (
@@ -596,7 +606,11 @@ const handleSendBill = async (e) => {
                       </div>
                     ))}
                   </td>
-                  <td>{bill.sentCount || 0}</td>
+                  <td>
+                    {bill.deliveryStatus
+                      ? `${bill.deliveryStatus}${bill.deliveryStatus === 'partial' ? ` (${bill.sentCount || 0} sent)` : ''}`
+                      : `${bill.sentCount || 0} sent`}
+                  </td>
                   <td style={{ color: '#9ca3af', fontSize: 12 }}>
                     {bill.createdAt ? new Date(bill.createdAt).toLocaleString() : '—'}
                   </td>
