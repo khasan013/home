@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Plus, Trash2, X } from 'lucide-react';
 import { noticeApi } from '../api';
 import { useAuth } from '../context/AuthContext';
@@ -35,7 +35,7 @@ export default function NoticeBoard() {
     );
   }, [currentHome, user]);
 
-  const loadNotices = async () => {
+  const loadNotices = useCallback(async () => {
     if (!homeId) return;
     try {
       const data = await noticeApi.getAll(homeId);
@@ -43,13 +43,15 @@ export default function NoticeBoard() {
     } catch (err) {
       setError(err.message || 'Failed to load notices');
     }
-  };
+  }, [homeId]);
 
   useEffect(() => {
-    loadNotices();
-    const timer = setInterval(loadNotices, REFRESH_MS);
+    Promise.resolve().then(loadNotices);
+    const timer = setInterval(() => {
+      loadNotices();
+    }, REFRESH_MS);
     return () => clearInterval(timer);
-  }, [homeId]);
+  }, [loadNotices]);
 
   const filtered = notices.filter(notice => notice.category === activeTab);
 

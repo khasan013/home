@@ -35,7 +35,7 @@ function SidebarContent({
   ];
 
   return (
-    <div className="p-4 md:p-6 space-y-6 h-full flex flex-col overflow-y-auto">
+    <div className="sidebar-content premium-scroll h-full min-h-0 flex flex-col overflow-y-auto overscroll-contain">
       {/* Logo */}
       <div>
         <h1 className="text-2xl font-bold text-white">Meal Mate</h1>
@@ -43,7 +43,7 @@ function SidebarContent({
       </div>
 
       {/* Search to Join Home */}
-      <div className="space-y-2">
+      <div className="sidebar-section space-y-2">
         {showJoinForm ? (
           <form onSubmit={handleJoinHome} className="space-y-3 bg-white/5 p-4 rounded-lg border border-white/10">
             <div className="flex items-center gap-2">
@@ -89,7 +89,7 @@ function SidebarContent({
       </div>
 
       {/* Home Switcher */}
-      <div className="space-y-2">
+      <div className="sidebar-section space-y-2">
         <p className="text-gray-500 text-xs uppercase font-semibold tracking-wider">Your Homes</p>
         {homes.map(home => (
           <button
@@ -147,7 +147,7 @@ function SidebarContent({
       <div className="border-t border-white/10" />
 
       {/* Nav */}
-      <nav className="space-y-1 flex-1">
+      <nav className="sidebar-nav space-y-1 flex-1 min-h-0">
         {navItems.map(({ icon: Icon, label }) => (
           <button
             key={label}
@@ -164,7 +164,7 @@ function SidebarContent({
       </nav>
 
       {/* User + Logout */}
-      <div className="pt-4 border-t border-white/10 space-y-3">
+      <div className="sidebar-user mt-auto pt-4 border-t border-white/10 space-y-3">
         <div className="flex items-center gap-3 px-2">
           <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
             {user?.firstName?.[0] || user?.email?.[0]?.toUpperCase() || '?'}
@@ -287,7 +287,7 @@ export default function MainApp() {
   };
 
   return (
-    <div className="app-shell min-h-screen flex flex-col md:flex-row">
+    <div className="app-shell min-h-screen min-h-svh flex flex-col md:flex-row overflow-x-hidden">
       {/* ── DESKTOP SIDEBAR (hidden on mobile) ── */}
       <div className={`hidden md:flex premium-sidebar border-r border-white/10 transition-all duration-300 overflow-hidden flex-shrink-0 ${
         sidebarOpen ? 'md:w-72' : 'md:w-0'
@@ -305,11 +305,11 @@ export default function MainApp() {
 
       {/* ── MOBILE SIDEBAR (drawer) ── */}
       <div
-        className={`fixed md:hidden top-0 left-0 h-screen w-[82vw] max-w-80 premium-sidebar border-r border-white/10 z-50 transform transition-transform duration-300 ${
+        className={`mobile-drawer fixed md:hidden top-0 left-0 h-screen min-h-svh w-[86vw] max-w-[320px] premium-sidebar border-r border-white/10 z-50 transform transition-transform duration-300 ${
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="pt-16">
+        <div className="mobile-drawer-inner">
           <SidebarContent {...sidebarProps} />
         </div>
       </div>
@@ -317,7 +317,7 @@ export default function MainApp() {
       {/* ── Main Content ── */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Bar */}
-        <div className="premium-topbar px-4 md:px-6 py-4 flex justify-between items-center">
+        <div className="premium-topbar px-3 sm:px-4 md:px-6 py-3 md:py-4 flex justify-between items-center sticky top-0 z-30">
           <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
             {/* Mobile Menu Button */}
             <button
@@ -352,7 +352,7 @@ export default function MainApp() {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-auto p-4 md:p-6">
+        <div className="main-content flex-1 overflow-auto premium-scroll p-3 sm:p-4 md:p-6">
           {currentHome ? (
             activeNav === 'Notice Board' ? (
               <NoticeBoard />

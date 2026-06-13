@@ -18,6 +18,7 @@ const REFRESH_INTERVAL = 30_000; // 30 seconds
 export default function HomeDashboard() {
   const { currentHome, setCurrentHome, members, setMembers, meals, setMeals, expenses, setExpenses, report, setReport } = useHome();
   const [activeTab, setActiveTab] = useState('overview');
+  const [isCompact, setIsCompact] = useState(window.innerWidth < 640);
   const homeId = currentHome?._id;
   const intervalRef = useRef(null);
 
@@ -99,6 +100,12 @@ export default function HomeDashboard() {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [homeId]);
 
+  useEffect(() => {
+    const handleResize = () => setIsCompact(window.innerWidth < 640);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const totalExpense = report?.totalExpense ?? expenses.reduce((s, e) => s + e.amount, 0);
   const totalMeals   = report?.totalMeals   ?? meals.reduce((s, m) => s + m.mealCount, 0);
   const perMeal      = report?.perMeal ?? (totalMeals ? totalExpense / totalMeals : 0);
@@ -166,22 +173,17 @@ export default function HomeDashboard() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="dashboard-layout space-y-5 md:space-y-6">
       {/* ── Header Stats (white cards) ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
+      <div className="dashboard-stats grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3 md:gap-4">
         {stats.map(({ label, value, icon, accent, lightBg }) => (
           <div
             key={label}
+            className="dashboard-stat-card"
             style={{
               background: 'linear-gradient(145deg, rgba(15,29,51,0.82), rgba(9,21,38,0.94))',
-              borderRadius: 28,
-              padding: '20px 18px',
               boxShadow: '0 22px 52px rgba(0,0,0,0.24)',
               border: `1.5px solid ${accent}80`,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 6,
-              minWidth: 0,
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -192,17 +194,17 @@ export default function HomeDashboard() {
                 padding: '4px 6px',
                 lineHeight: 1,
               }}>{icon}</span>
-              <p style={{ color: '#a8b2c6', fontSize: 12, fontWeight: 700, margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <p className="dashboard-stat-label" style={{ color: '#a8b2c6', margin: 0 }}>
                 {label}
               </p>
             </div>
-            <p style={{ color: '#ffffff', fontSize: 26, fontWeight: 800, margin: 0, wordBreak: 'break-word' }}>{value}</p>
+            <p className="dashboard-stat-value" style={{ color: '#ffffff', margin: 0 }}>{value}</p>
           </div>
         ))}
       </div>
 
       {/* ── Tabs ── */}
-      <div className="flex gap-2 border-b border-white/10 overflow-x-auto premium-scroll pb-px">
+      <div className="dashboard-tabs flex gap-2 border-b border-white/10 overflow-x-auto premium-scroll pb-px">
         {['overview', 'meals', 'expenses', 'members'].map(tab => (
           <button key={tab} onClick={() => setActiveTab(tab)}
             className={`px-4 py-3 font-semibold capitalize transition ${
@@ -216,15 +218,15 @@ export default function HomeDashboard() {
       </div>
 
       {activeTab === 'overview' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="dashboard-charts grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
           <div className="premium-panel p-4 sm:p-6">
             <h3 className="text-lg font-semibold text-white mb-4">Expense Distribution</h3>
             {pieData.length === 0 ? (
               <p className="text-gray-400 text-center py-16">No expense data yet</p>
             ) : (
-              <ResponsiveContainer width="100%" height={280}>
+              <ResponsiveContainer width="100%" height={isCompact ? 220 : 280}>
                 <PieChart>
-                  <Pie data={pieData} cx="50%" cy="50%" outerRadius={90} dataKey="value"
+                  <Pie data={pieData} cx="50%" cy="50%" outerRadius={isCompact ? 66 : 90} dataKey="value"
                     label={({ category, value }) => `${category} ৳${value.toFixed(0)}`}>
                     {pieData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                   </Pie>
@@ -239,7 +241,7 @@ export default function HomeDashboard() {
             {barData.length === 0 ? (
               <p className="text-gray-400 text-center py-16">No meal data yet</p>
             ) : (
-              <ResponsiveContainer width="100%" height={280}>
+              <ResponsiveContainer width="100%" height={isCompact ? 220 : 280}>
                 <BarChart data={barData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
                   <XAxis dataKey="day" stroke="rgba(255,255,255,0.5)" />

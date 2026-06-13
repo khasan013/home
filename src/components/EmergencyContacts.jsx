@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Phone, Save } from 'lucide-react';
 import { emergencyContactApi } from '../api';
 import { useAuth } from '../context/AuthContext';
@@ -17,51 +17,8 @@ const emptyContacts = {
   gasProviderPhone: '',
 };
 
-export default function EmergencyContacts() {
-  const { user } = useAuth();
-  const { currentHome } = useHome();
-  const homeId = currentHome?._id;
-  const [contacts, setContacts] = useState(emptyContacts);
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
-
-  const isAdmin = useMemo(() => {
-    const myId = user?._id || user?.id || user?.userId;
-    return currentHome?.members?.some(member =>
-      userIdOf(member.user) === myId && member.role === 'admin'
-    );
-  }, [currentHome, user]);
-
-  const loadContacts = async () => {
-    if (!homeId) return;
-    const data = await emergencyContactApi.get(homeId);
-    setContacts({ ...emptyContacts, ...(data || {}) });
-  };
-
-  useEffect(() => {
-    loadContacts().catch(err => setMessage(err.message || 'Failed to load contacts'));
-  }, [homeId]);
-
-  const updateField = (key, value) => {
-    setContacts(prev => ({ ...prev, [key]: value }));
-  };
-
-  const handleSave = async (event) => {
-    event.preventDefault();
-    setLoading(true);
-    setMessage('');
-    try {
-      const saved = await emergencyContactApi.update(homeId, contacts);
-      setContacts({ ...emptyContacts, ...(saved || {}) });
-      setMessage('Contacts updated');
-    } catch (err) {
-      setMessage(err.message || 'Failed to update contacts');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const ContactCard = ({ title, nameKey, phoneKey }) => (
+function ContactCard({ title, nameKey, phoneKey, contacts, isAdmin, updateField }) {
+  return (
     <div className="rounded-lg border border-white/10 bg-slate-900/70 p-5">
       <h3 className="text-lg font-bold text-white">{title}</h3>
       {isAdmin ? (
@@ -97,6 +54,53 @@ export default function EmergencyContacts() {
       </a>
     </div>
   );
+}
+
+export default function EmergencyContacts() {
+  const { user } = useAuth();
+  const { currentHome } = useHome();
+  const homeId = currentHome?._id;
+  const [contacts, setContacts] = useState(emptyContacts);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+
+  const isAdmin = useMemo(() => {
+    const myId = user?._id || user?.id || user?.userId;
+    return currentHome?.members?.some(member =>
+      userIdOf(member.user) === myId && member.role === 'admin'
+    );
+  }, [currentHome, user]);
+
+  const loadContacts = useCallback(async () => {
+    if (!homeId) return;
+    const data = await emergencyContactApi.get(homeId);
+    setContacts({ ...emptyContacts, ...(data || {}) });
+  }, [homeId]);
+
+  useEffect(() => {
+    Promise.resolve()
+      .then(loadContacts)
+      .catch(err => setMessage(err.message || 'Failed to load contacts'));
+  }, [loadContacts]);
+
+  const updateField = (key, value) => {
+    setContacts(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleSave = async (event) => {
+    event.preventDefault();
+    setLoading(true);
+    setMessage('');
+    try {
+      const saved = await emergencyContactApi.update(homeId, contacts);
+      setContacts({ ...emptyContacts, ...(saved || {}) });
+      setMessage('Contacts updated');
+    } catch (err) {
+      setMessage(err.message || 'Failed to update contacts');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-5">
@@ -107,8 +111,22 @@ export default function EmergencyContacts() {
 
       <form onSubmit={handleSave} className="space-y-4">
         <div className="grid gap-4 md:grid-cols-2">
-          <ContactCard title="Caretaker" nameKey="caretakerName" phoneKey="caretakerPhone" />
-          <ContactCard title="Gas Service" nameKey="gasProviderName" phoneKey="gasProviderPhone" />
+          <ContactCard
+            title="Caretaker"
+            nameKey="caretakerName"
+            phoneKey="caretakerPhone"
+            contacts={contacts}
+            isAdmin={isAdmin}
+            updateField={updateField}
+          />
+          <ContactCard
+            title="Gas Service"
+            nameKey="gasProviderName"
+            phoneKey="gasProviderPhone"
+            contacts={contacts}
+            isAdmin={isAdmin}
+            updateField={updateField}
+          />
         </div>
 
         {isAdmin && (
