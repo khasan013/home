@@ -171,7 +171,7 @@ export default function AdminDashboard() {
     const perEgg = totalEggCount > 0 ? totalEggPrice / totalEggCount : 0;
     const consumedCost = consumedEgg * perEgg;
     const remainingEggCost = totalEggPrice - consumedCost;
-    const totalBill = otherCost + remainingEggCost + sharedCost + waterCost;
+    const totalBill = otherCost + remainingEggCost + consumedCost + sharedCost + waterCost;
 
     return {
       totalEggPrice,
