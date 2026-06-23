@@ -11,6 +11,15 @@ const BASE_URL = (
 export const getToken = () => localStorage.getItem('token');
 export const setToken = (token) => localStorage.setItem('token', token);
 export const clearToken = () => localStorage.removeItem('token');
+export const getStoredUser = () => {
+  try {
+    return JSON.parse(localStorage.getItem('user') || 'null');
+  } catch {
+    return null;
+  }
+};
+export const setStoredUser = (user) => localStorage.setItem('user', JSON.stringify(user));
+export const clearStoredUser = () => localStorage.removeItem('user');
 
 
 // ── Core fetch wrapper ────────────────────────────────────
@@ -70,6 +79,9 @@ export const authApi = {
 
   resetPassword: (body) =>
     request('POST', '/auth/reset-password', body, false),
+
+  me: () =>
+    request('GET', '/auth/me'),
 };
 
 // ── Homes ─────────────────────────────────────────────────
@@ -120,6 +132,9 @@ export const expenseApi = {
 
   getAll: (homeId) =>
     request('GET', `/expense/${homeId}`),
+
+  update: (homeId, expId, body) =>
+    request('PUT', `/expense/${homeId}/${expId}`, body),
 
   remove: (homeId, expId) =>
     request('DELETE', `/expense/${homeId}/${expId}`),

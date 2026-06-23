@@ -132,6 +132,8 @@ export default function AdminDashboard() {
     values.totalEggCount,
     values.consumedEgg,
     values.otherCost,
+    values.sharedCost,
+    values.waterCost,
     values.totalMeals,
     values.perEgg,
     values.totalBill,
@@ -140,10 +142,14 @@ export default function AdminDashboard() {
   const aggregateBillData = (expenseList, mealList, formValues = {}) => {
     const eggExpenses = expenseList.filter(e => e.category === 'Egg');
     const groceryExpenses = expenseList.filter(e => e.category === 'Grocery');
+    const sharedBillExpenses = expenseList.filter(e => e.category === 'SharedBill');
+    const waterExpenses = expenseList.filter(e => e.category === 'WaterSupply');
 
     const defaultEggPrice = eggExpenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
     const defaultEggCount = eggExpenses.reduce((s, e) => s + (Number(e.eggQty) || 0), 0);
     const defaultOtherCost = groceryExpenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+    const sharedCost = sharedBillExpenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+    const waterCost = waterExpenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
     const defaultConsumedEgg = mealList
       .filter(m => !m.isPenalty)
       .reduce((s, m) => s + (Number(m.eggsCount) || 0), 0);
@@ -165,13 +171,15 @@ export default function AdminDashboard() {
     const perEgg = totalEggCount > 0 ? totalEggPrice / totalEggCount : 0;
     const consumedCost = consumedEgg * perEgg;
     const remainingEggCost = totalEggPrice - consumedCost;
-    const totalBill = otherCost + remainingEggCost;
+    const totalBill = otherCost + remainingEggCost + sharedCost + waterCost;
 
     return {
       totalEggPrice,
       totalEggCount,
       consumedEgg,
       otherCost,
+      sharedCost,
+      waterCost,
       totalMeals,
       perEgg,
       consumedCost,
@@ -249,7 +257,9 @@ export default function AdminDashboard() {
       values.totalEggPrice > 0 ||
       values.totalEggCount > 0 ||
       values.consumedEgg > 0 ||
-      values.otherCost > 0;
+      values.otherCost > 0 ||
+      values.sharedCost > 0 ||
+      values.waterCost > 0;
     return hasAnyCost ? values : null;
   })();
 
@@ -286,6 +296,8 @@ const doSendBill = useCallback(async (auto = false) => {
       totalEggCount: values.totalEggCount,
       consumedEgg: values.consumedEgg,
       otherCost: values.otherCost,
+      sharedCost: values.sharedCost,
+      waterCost: values.waterCost,
       totalMeals: values.totalMeals,
       totalBill: values.totalBill,
       perEgg: values.perEgg,

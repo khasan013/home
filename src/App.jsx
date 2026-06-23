@@ -223,10 +223,18 @@ function TopNav({ screen, setScreen, isMobileMenuOpen, setIsMobileMenuOpen }) {
 
 // ── Inner router (has access to AuthContext) ──────────────
 function AppRouter() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, authLoading } = useAuth();
   const [screen, setScreen] = useState('login');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
+
+  if (authLoading) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#0f172a', display: 'grid', placeItems: 'center', color: '#e5e7eb' }}>
+        Loading...
+      </div>
+    );
+  }
 
   // Once authenticated, always show app
   if (isAuthenticated) {
