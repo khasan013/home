@@ -14,6 +14,13 @@ const itemMeta = [
 ];
 const round2 = value => Math.round((Number(value || 0) + Number.EPSILON) * 100) / 100;
 const fmt = value => round2(value).toFixed(2);
+const getLocalDateInputValue = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 export default function MealTracking() {
   const { currentHome, meals, setMeals } = useHome();
@@ -25,7 +32,7 @@ export default function MealTracking() {
   const [editing, setEditing] = useState(null);
   const [editValue, setEditValue] = useState('');
 
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(getLocalDateInputValue);
   const [quantities, setQuantities] = useState(initialQuantities);
   const [percentages, setPercentages] = useState(initialPercentages);
   const [extraEggs, setExtraEggs] = useState(0);
@@ -85,7 +92,8 @@ export default function MealTracking() {
     setSaving(true);
     try {
       await mealApi.add(homeId, {
-        date: new Date(`${date}T00:00:00`).toISOString(),
+        // Keep the selected calendar date stable across browser and server timezones.
+        date: `${date}T00:00:00.000Z`,
         mealCount: totalMeal,
         eggsCount: Number(extraEggs) || 0,
         mealSections: { quantities, percentages },
@@ -94,7 +102,7 @@ export default function MealTracking() {
       setQuantities(initialQuantities);
       setPercentages(initialPercentages);
       setExtraEggs(0);
-      setDate(new Date().toISOString().split('T')[0]);
+      setDate(getLocalDateInputValue());
       setShowForm(false);
     } catch (err) { alert(err.message); }
     finally { setSaving(false); }
