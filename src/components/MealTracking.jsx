@@ -1,14 +1,14 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Plus, Trash2, BarChart3, Drumstick, Egg, Soup, Carrot, Utensils } from 'lucide-react';
+import { Plus, Trash2, BarChart3, Drumstick, Egg, Soup, Carrot, Utensils, CalendarDays, Check } from 'lucide-react';
 import { useHome } from '../context/HomeContext';
 import { mealApi } from '../api';
 
 const initialQuantities = { meat: 0, vegetables: 0, egg: 0, rice: 0.1, vat: 0 };
 const initialPercentages = { meat: 75, vegetables: 10, egg: 50, rice: 100, vat: 0 };
 const itemMeta = [
-  { key: 'meat', label: 'Mash/Murgi', icon: Drumstick, color: 'text-orange-400' },
-  { key: 'vegetables', label: 'Vegetables', icon: Carrot, color: 'text-emerald-400' },
-  { key: 'egg', label: 'Egg', icon: Egg, color: 'text-amber-300' },
+  { key: 'meat', label: 'Mash / Murgi', icon: Drumstick, color: 'text-orange-400' },
+  { key: 'vegetables', label: 'Vegi', icon: Carrot, color: 'text-emerald-400' },
+  { key: 'egg', label: 'Egg with Meal', icon: Egg, color: 'text-amber-300' },
   { key: 'rice', label: 'Rice', icon: Soup, color: 'text-slate-100' },
   { key: 'vat', label: 'Vat (Custom)', icon: Utensils, color: 'text-violet-300' },
 ];
@@ -180,12 +180,12 @@ export default function MealTracking() {
     <div className="space-y-4">
 
       {/* HEADER */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-        <h3 className="text-lg font-semibold text-white">Meal Table</h3>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3"><div className="rounded-xl border border-violet-400/20 bg-violet-500/10 p-2.5 text-violet-300"><Soup className="h-6 w-6" /></div><div><h3 className="text-xl font-bold tracking-tight text-white">Meal Table</h3><p className="text-sm text-slate-400">Select meal items and quantities for this date</p></div></div>
 
         <button
           onClick={() => setShowForm(!showForm)}
-          className="flex items-center justify-center gap-2 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg shadow-lg shadow-purple-950/30"
+          className="flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-500 px-6 py-3 font-semibold text-white shadow-lg shadow-violet-950/40 transition hover:brightness-110 active:scale-[0.98]"
         >
           <Plus className="w-4 h-4" /> Add Meal
         </button>
@@ -193,21 +193,19 @@ export default function MealTracking() {
 
       {/* FORM */}
       {showForm && (
-        <form
-          onSubmit={handleSubmit}
-          className="bg-white/5 border border-white/10 rounded-xl p-6 space-y-4"
-        >
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-
-            <label className="text-sm text-slate-300">Date<input type="date" value={date} onChange={e => setDate(e.target.value)} className="mt-1 block w-full rounded-lg border border-white/20 bg-slate-900 px-3 py-2 text-white [color-scheme:dark]" required /></label>
-
+        <form onSubmit={handleSubmit} className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+          <div className="space-y-4 rounded-2xl border border-slate-800/90 bg-gradient-to-br from-slate-950 via-slate-950 to-indigo-950/40 p-4 shadow-xl shadow-black/20 sm:p-6">
+            <label className="block max-w-sm text-sm font-medium text-slate-300">Date<div className="relative mt-1.5"><input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full rounded-xl border border-slate-700 bg-slate-900/90 px-4 py-3 pr-10 text-white outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 [color-scheme:dark]" required /><CalendarDays className="pointer-events-none absolute right-3 top-3.5 h-5 w-5 text-slate-400" /></div></label>
+            <div className="grid gap-3 md:grid-cols-3">{sectionRows.slice(0, 3).map(row => <ItemCard key={row.key} row={row} quantities={quantities} setQuantities={setQuantities} />)}</div>
+            <div className="grid gap-3 rounded-2xl border border-slate-800 bg-slate-900/35 p-3 md:grid-cols-[minmax(0,1fr)_1px_minmax(0,1fr)]">
+              <ItemCard row={sectionRows[3]} quantities={quantities} setQuantities={setQuantities} presets={[0.05, 0.1, 0.15]} />
+              <div className="hidden bg-slate-700/70 md:block" />
+              <ItemCard row={sectionRows[4]} quantities={quantities} percentages={percentages} setQuantities={setQuantities} setPercentages={setPercentages} customPercent />
+            </div>
+            <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-800 bg-slate-900/45 p-4 transition hover:border-slate-700"><div className="flex items-center gap-3"><Egg className="h-9 w-9 text-amber-300"/><div className="font-semibold">Extra Egg<small className="block font-normal text-slate-400">(additional eggs)</small></div></div><QuantityStepper value={extraEggs} onChange={setExtraEggs} integer /></div>
+            <button type="submit" disabled={saving} className="w-full rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-500 py-3 font-bold text-white shadow-lg shadow-violet-950/30 transition hover:brightness-110 hover:shadow-violet-900/30 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60">{saving ? 'Saving…' : 'Save Meal'}</button>
           </div>
-
-          <div className="grid gap-3 sm:grid-cols-3">{sectionRows.slice(0, 3).map(row => <ItemCard key={row.key} row={row} quantities={quantities} percentages={percentages} setQuantities={setQuantities} setPercentages={setPercentages} />)}</div>
-          <div className="grid gap-3 sm:grid-cols-2"><ItemCard row={sectionRows[3]} quantities={quantities} percentages={percentages} setQuantities={setQuantities} presets={[0.05, 0.1, 0.15]} /><ItemCard row={sectionRows[4]} quantities={quantities} percentages={percentages} setQuantities={setQuantities} setPercentages={setPercentages} customPercent /></div>
-          <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 p-3"><div className="flex items-center gap-2"><Egg className="h-8 w-8 text-amber-300"/><span>Extra Egg <small className="block text-slate-400">additional eggs (same as before)</small></span></div><QuantityStepper value={extraEggs} onChange={setExtraEggs} integer /></div>
-          <aside className="rounded-xl border border-white/10 bg-slate-900/70 p-4"><div className="mb-2 flex items-center gap-2"><BarChart3 className="text-violet-400"/><div><b>Total Meal (Estimated)</b><small className="block text-slate-400">Selected quantity × meal value</small></div></div>{sectionRows.map(row => <div key={row.key} className="flex justify-between border-b border-white/5 py-2"><span>{row.label} ({row.percent}%) <small className="block text-slate-400">{row.key === 'rice' ? `${Number(row.quantity).toFixed(2)} meal value` : `${Number(row.quantity).toFixed(2)} × ${fmt(row.percent / 100)} meal`}</small></span><b>{fmt(row.contribution)} meal</b></div>)}<div className="flex justify-between pt-3 text-lg font-bold"><span>∑ Total Meal</span><span className="rounded-lg bg-violet-600 px-4 py-2">{fmt(totalMeal)} meal</span></div></aside>
-          <button type="submit" disabled={saving} className="w-full rounded-lg bg-purple-500 py-3 font-semibold hover:bg-purple-600 disabled:opacity-60">{saving ? 'Saving…' : 'Save Meal'}</button>
+          <SummaryPanel sectionRows={sectionRows} extraEggs={extraEggs} totalMeal={totalMeal} />
         </form>
       )}
 
@@ -288,12 +286,12 @@ export default function MealTracking() {
   );
 }
 
-function QuantityStepper({ value, onChange, integer = false }) {
+function QuantityStepper({ value, onChange, integer = false, disabled = false }) {
   const step = integer ? 1 : 1;
-  return <div className="flex items-center rounded-full border border-slate-700 bg-slate-900">
-    <button type="button" onClick={() => onChange(Math.max(0, round2((Number(value) || 0) - step)))} className="rounded-full px-3 py-2 text-xl hover:bg-slate-800">−</button>
-    <input type="number" min="0" step={integer ? 1 : 'any'} value={value} onChange={event => onChange(Math.max(0, Number(event.target.value) || 0))} className="w-14 bg-transparent text-center outline-none" />
-    <button type="button" onClick={() => onChange(round2((Number(value) || 0) + step))} className="rounded-full px-3 py-2 text-xl hover:bg-slate-800">+</button>
+  return <div className={`flex items-center rounded-full border border-slate-700 bg-slate-900 ${disabled ? 'opacity-40' : ''}`}>
+    <button type="button" disabled={disabled} onClick={() => onChange(Math.max(0, round2((Number(value) || 0) - step)))} className="rounded-full p-2.5 text-lg transition hover:bg-slate-800 disabled:cursor-not-allowed">−</button>
+    <input type="number" min="0" step={integer ? 1 : 'any'} disabled={disabled} value={value} onChange={event => onChange(Math.max(0, Number(event.target.value) || 0))} className="w-10 bg-transparent text-center text-sm outline-none disabled:cursor-not-allowed" />
+    <button type="button" disabled={disabled} onClick={() => onChange(round2((Number(value) || 0) + step))} className="rounded-full p-2.5 text-lg transition hover:bg-slate-800 disabled:cursor-not-allowed">+</button>
   </div>;
 }
 
@@ -301,8 +299,29 @@ function ItemCard({ row, quantities, percentages, setQuantities, setPercentages,
   const Icon = row.icon;
   const setQuantity = value => setQuantities(previous => ({ ...previous, [row.key]: value }));
   const setPercent = value => setPercentages(previous => ({ ...previous, [row.key]: Math.min(100, Math.max(0, Number(value) || 0)) }));
-  return <div className="flex min-w-0 items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/[0.03] p-3">
-    <div className="flex min-w-0 items-center gap-2"><Icon className={`h-8 w-8 shrink-0 ${row.color}`} /><div className="min-w-0"><div className="truncate text-sm font-semibold">{row.label}</div>{customPercent ? <label className="text-xs text-slate-400">Section % <input aria-label={`${row.label} percentage`} type="number" min="0" max="100" value={percentages[row.key]} onChange={event => setPercent(event.target.value)} className="w-12 border-b border-slate-600 bg-transparent text-center text-white" /></label> : <span className="text-xs text-slate-400">{row.percent}%</span>}</div></div>
-    {presets ? <div className="flex shrink-0 gap-1">{presets.map(value => <button type="button" key={value} onClick={() => setQuantity(value)} className={`rounded-full border px-2 py-2 text-xs ${Number(quantities[row.key]) === value ? 'border-violet-400 bg-violet-600' : 'border-slate-700 bg-slate-900'}`}>{value.toFixed(2)}</button>)}</div> : customPercent ? <QuantityStepper value={quantities[row.key]} onChange={setQuantity} /> : <select aria-label={`${row.label} quantity`} value={quantities[row.key]} onChange={event => setQuantity(Number(event.target.value))} className="rounded-full border border-slate-700 bg-slate-900 px-4 py-2 text-white">{Array.from({ length: 11 }, (_, index) => <option key={index} value={index}>{index} {index === 1 ? 'item' : 'items'}</option>)}</select>}
+  const selected = Number(quantities[row.key]) > 0;
+  const optional = !presets;
+  return <div className={`flex min-w-0 items-center justify-between gap-2 rounded-2xl border p-3 transition duration-200 ${selected ? 'border-violet-500/80 bg-violet-500/[0.08] shadow-lg shadow-violet-950/10' : 'border-slate-800 bg-slate-900/35 hover:border-slate-700'}`}>
+    <div className="flex min-w-0 items-center gap-2.5">
+      {optional && <button type="button" role="checkbox" aria-checked={selected} aria-label={`Select ${row.label}`} onClick={() => setQuantity(selected ? 0 : 1)} className={`grid h-6 w-6 shrink-0 place-items-center rounded-md border transition ${selected ? 'border-violet-400 bg-violet-500 text-white shadow-md shadow-violet-950/40' : 'border-slate-600 bg-slate-950 text-transparent hover:border-violet-400'}`}><Check className="h-4 w-4" /></button>}
+      <Icon className={`h-8 w-8 shrink-0 ${row.color}`} />
+      <div className="min-w-0"><div className="truncate text-sm font-semibold">{row.label}</div>{customPercent ? <label className="text-xs text-slate-400">Percentage <input aria-label={`${row.label} percentage`} type="number" min="0" max="100" disabled={!selected} value={percentages[row.key]} onChange={event => setPercent(event.target.value)} className="w-12 border-b border-slate-600 bg-transparent text-center text-white disabled:opacity-40" />%</label> : <span className="text-xs text-slate-400">{row.percent}%</span>}</div>
+    </div>
+    {presets ? <div className="flex shrink-0 gap-1">{presets.map(value => <button type="button" key={value} aria-pressed={Number(quantities[row.key]) === value} onClick={() => setQuantity(Number(quantities[row.key]) === value ? 0 : value)} className={`rounded-full border px-2.5 py-2 text-xs transition ${Number(quantities[row.key]) === value ? 'border-violet-400 bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white shadow-md shadow-violet-950/30' : 'border-slate-700 bg-slate-900 text-slate-300 hover:border-violet-500/60'}`}>{value}</button>)}</div> : <QuantityStepper value={quantities[row.key]} onChange={setQuantity} disabled={!selected} />}
   </div>;
+}
+
+function SummaryPanel({ sectionRows, extraEggs, totalMeal }) {
+  return <aside className="h-fit rounded-2xl border border-indigo-900/60 bg-gradient-to-br from-slate-950 via-slate-950 to-indigo-950/50 p-4 shadow-xl shadow-black/20 sm:p-5">
+    <div className="mb-3 flex items-center gap-3"><div className="rounded-lg bg-violet-500/10 p-2 text-violet-300"><BarChart3 className="h-6 w-6" /></div><div><h4 className="font-bold text-white">Total Meal (Estimated)</h4><p className="text-xs text-slate-400">Based on selected items and quantity</p></div></div>
+    <div className="divide-y divide-slate-800/80">
+      {sectionRows.map(row => {
+        const selected = row.quantity > 0;
+        const description = row.key === 'rice' ? `${Number(row.quantity).toFixed(2)} meal portion` : `${Number(row.quantity).toFixed(2)} × ${fmt(row.percent / 100)}`;
+        return <div key={row.key} className={`flex items-center justify-between gap-2 py-2.5 transition ${selected ? 'opacity-100' : 'opacity-45'}`}><div className="flex min-w-0 items-center gap-2.5"><row.icon className={`h-6 w-6 shrink-0 ${row.color}`} /><div className="min-w-0"><div className="truncate text-sm font-medium text-slate-100">{row.label} ({row.percent}%)</div><div className="truncate text-xs text-slate-400">{description}</div></div></div><span className={`shrink-0 rounded-full px-3 py-1 text-right text-sm font-semibold ${selected ? 'bg-violet-500/15 text-violet-100' : 'bg-slate-800/70 text-slate-400'}`}>{fmt(row.contribution)}<small className="block text-[10px] font-normal">meal</small></span></div>;
+      })}
+      <div className={`flex items-center justify-between gap-2 py-2.5 ${Number(extraEggs) > 0 ? '' : 'opacity-45'}`}><div className="flex min-w-0 items-center gap-2.5"><Egg className="h-6 w-6 shrink-0 text-amber-300"/><div><div className="text-sm font-medium text-slate-100">Extra Egg</div><div className="text-xs text-slate-400">{Number(extraEggs) || 0} additional eggs</div></div></div><span className="rounded-full bg-slate-800/70 px-3 py-1 text-right text-sm font-semibold text-slate-400">{fmt(0)}<small className="block text-[10px] font-normal">meal</small></span></div>
+    </div>
+    <div className="mt-2 flex items-center justify-between border-t border-slate-700/90 pt-3"><div className="flex items-center gap-3"><span className="text-3xl text-slate-300">∑</span><span className="font-semibold text-white">Total Meal</span></div><span className="rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-500 px-5 py-2 text-center text-xl font-bold text-white shadow-lg shadow-violet-950/30">{fmt(totalMeal)}<small className="block text-xs font-medium">meal</small></span></div>
+  </aside>;
 }
