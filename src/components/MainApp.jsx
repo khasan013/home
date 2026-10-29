@@ -1,6 +1,6 @@
 // src/components/MainApp.jsx - Mobile Responsive with Search to Join Home
 import { useState, useEffect } from 'react';
-import { Home, LogOut, Users, TrendingUp, Settings, ChevronDown, Plus, AlertCircle, Menu, X, Search, Loader, Megaphone, Phone, Droplets } from 'lucide-react';
+import { Home, LogOut, Users, TrendingUp, Settings, Plus, AlertCircle, Search, Loader, Megaphone, Phone, Droplets } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useHome } from '../context/HomeContext';
 import { homeApi } from '../api';
@@ -39,9 +39,12 @@ function SidebarContent({
   return (
     <div className="sidebar-content premium-scroll h-full min-h-0 flex flex-col overflow-y-auto overscroll-contain">
       {/* Logo */}
-      <div>
-        <h1 className="text-2xl font-bold text-white">Meal Mate</h1>
-        <p className="text-gray-400 text-sm">Fair Sharing</p>
+      <div className="flex items-center gap-3">
+        <img src="/favicon.svg" alt="MealMate logo" className="h-10 w-10 shrink-0" />
+        <div>
+          <h1 className="text-2xl font-bold text-white">MealMate</h1>
+          <p className="text-gray-400 text-sm">Fair Sharing</p>
+        </div>
       </div>
 
       {/* Search to Join Home */}
@@ -191,7 +194,6 @@ export default function MainApp() {
   const {
     homes, setHomes, currentHome, setCurrentHome, resetHomeState,
   } = useHome();
-  const [sidebarOpen,  setSidebarOpen]  = useState(window.innerWidth >= 768);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showNewHome,  setShowNewHome]  = useState(false);
   const [newHomeName,  setNewHomeName]  = useState('');
@@ -238,7 +240,6 @@ export default function MainApp() {
       const mobile = window.innerWidth < 768;
       setIsMobile(mobile);
       if (!mobile) {
-        setSidebarOpen(true);
         setMobileMenuOpen(false);
       }
     };
@@ -310,10 +311,8 @@ export default function MainApp() {
   return (
     <div className="app-shell min-h-screen min-h-svh flex flex-col md:flex-row overflow-x-hidden">
       {/* ── DESKTOP SIDEBAR (hidden on mobile) ── */}
-      <div className={`hidden md:flex premium-sidebar border-r border-white/10 transition-all duration-300 overflow-hidden flex-shrink-0 ${
-        sidebarOpen ? 'md:w-72' : 'md:w-0'
-      }`}>
-        {sidebarOpen && <SidebarContent {...sidebarProps} />}
+      <div className="hidden md:flex md:w-72 premium-sidebar border-r border-white/10 overflow-hidden flex-shrink-0">
+        <SidebarContent {...sidebarProps} />
       </div>
 
       {/* ── MOBILE OVERLAY ── */}
@@ -340,22 +339,14 @@ export default function MainApp() {
         {/* Top Bar */}
         <div className="premium-topbar px-3 sm:px-4 md:px-6 py-3 md:py-4 flex justify-between items-center sticky top-0 z-30">
           <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
-            {/* Mobile Menu Button */}
             <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden premium-icon-button">
-              {mobileMenuOpen ? (
-                <X className="w-5 h-5 text-white" />
-              ) : (
-                <Menu className="w-5 h-5 text-white" />
-              )}
-            </button>
-
-            {/* Desktop Sidebar Toggle */}
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="hidden md:block premium-icon-button">
-              <ChevronDown className={`w-5 h-5 text-white transition-transform ${sidebarOpen ? '-rotate-90' : 'rotate-90'}`} />
+              type="button"
+              onClick={() => isMobile && setMobileMenuOpen(open => !open)}
+              aria-label={isMobile ? 'Open navigation menu' : 'MealMate home'}
+              className="flex shrink-0 items-center gap-2 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400"
+            >
+              <img src="/favicon.svg" alt="" className="h-9 w-9" />
+              <span className="hidden font-bold text-white sm:inline">MealMate</span>
             </button>
 
             {/* Home Title */}

@@ -24,13 +24,17 @@ function TopNav({ screen, setScreen, isMobileMenuOpen, setIsMobileMenuOpen }) {
         justifyContent: 'space-between',
         borderBottom: '1px solid #1e293b',
       }}>
-        <span style={{ 
-          color: '#a78bfa', 
-          fontWeight: 700, 
+        <span style={{
+          color: '#fff',
+          fontWeight: 700,
           fontSize: '18px',
           flex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
         }}>
-          🍽 Meal Mate
+          <img src="/favicon.svg" alt="" width="34" height="34" />
+          MealMate
         </span>
 
         {/* Desktop Navigation */}
