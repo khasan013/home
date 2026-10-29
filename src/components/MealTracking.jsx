@@ -4,7 +4,7 @@ import { useHome } from '../context/HomeContext';
 import { mealApi } from '../api';
 
 const initialQuantities = { meat: 0, vegetables: 0, egg: 0, rice: 0.1, vat: 0 };
-const initialPercentages = { meat: 75, vegetables: 10, egg: 50, rice: 100, vat: 0 };
+const initialPercentages = { meat: 75, vegetables: 10, egg: 50, rice: 100, vat: 100 };
 const itemMeta = [
   { key: 'meat', label: 'Mash / Murgi', icon: Drumstick, color: 'text-orange-400' },
   { key: 'vegetables', label: 'Vegi', icon: Carrot, color: 'text-emerald-400' },
@@ -35,7 +35,7 @@ export default function MealTracking() {
     ...item,
     quantity: Number(quantities[item.key]) || 0,
     percent: Number(percentages[item.key]) || 0,
-    contribution: item.key === 'rice'
+    contribution: item.key === 'rice' || item.key === 'vat'
       ? round2(Number(quantities[item.key]) || 0)
       : round2((Number(quantities[item.key]) || 0) * (Number(percentages[item.key]) || 0) / 100),
   })), [quantities, percentages]);
@@ -198,9 +198,9 @@ export default function MealTracking() {
             <label className="block max-w-sm text-sm font-medium text-slate-300">Date<div className="relative mt-1.5"><input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full rounded-xl border border-slate-700 bg-slate-900/90 px-4 py-3 text-white outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 [color-scheme:dark]" required /></div></label>
             <div className="grid gap-3 lg:grid-cols-3">{sectionRows.slice(0, 3).map(row => <ItemCard key={row.key} row={row} quantities={quantities} setQuantities={setQuantities} />)}</div>
             <div className="grid gap-3 rounded-2xl border border-slate-800 bg-slate-900/35 p-3 md:grid-cols-[minmax(0,1fr)_1px_minmax(0,1fr)]">
-              <ItemCard row={sectionRows[3]} quantities={quantities} setQuantities={setQuantities} presets={[0.05, 0.1, 0.15]} />
+              <ItemCard row={sectionRows[3]} quantities={quantities} setQuantities={setQuantities} presets={[0.05, 0.1, 0.15, 0.2, 0.3]} />
               <div className="hidden bg-slate-700/70 md:block" />
-              <ItemCard row={sectionRows[4]} quantities={quantities} percentages={percentages} setQuantities={setQuantities} setPercentages={setPercentages} customPercent />
+              <ItemCard row={sectionRows[4]} quantities={quantities} setQuantities={setQuantities} directMeal />
             </div>
             <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-800 bg-slate-900/45 p-4 transition hover:border-slate-700"><div className="flex items-center gap-3"><Egg className="h-9 w-9 text-amber-300"/><div className="font-semibold">Extra Egg<small className="block font-normal text-slate-400">(additional eggs)</small></div></div><QuantityStepper value={extraEggs} onChange={setExtraEggs} integer /></div>
             <button type="submit" disabled={saving} className="w-full rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-500 py-3 font-bold text-white shadow-lg shadow-violet-950/30 transition hover:brightness-110 hover:shadow-violet-900/30 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60">{saving ? 'Saving…' : 'Save Meal'}</button>
@@ -286,8 +286,8 @@ export default function MealTracking() {
   );
 }
 
-function QuantityStepper({ value, onChange, integer = false, disabled = false }) {
-  const step = integer ? 1 : 1;
+function QuantityStepper({ value, onChange, integer = false, disabled = false, step: requestedStep }) {
+  const step = requestedStep || 1;
   return <div className={`flex items-center rounded-full border border-slate-700 bg-slate-900 ${disabled ? 'opacity-40' : ''}`}>
     <button type="button" disabled={disabled} onClick={() => onChange(Math.max(0, round2((Number(value) || 0) - step)))} className="rounded-full p-2.5 text-lg transition hover:bg-slate-800 disabled:cursor-not-allowed">−</button>
     <input type="number" min="0" step={integer ? 1 : 'any'} disabled={disabled} value={value} onChange={event => onChange(Math.max(0, Number(event.target.value) || 0))} className="w-10 bg-transparent text-center text-sm outline-none disabled:cursor-not-allowed" />
@@ -295,20 +295,19 @@ function QuantityStepper({ value, onChange, integer = false, disabled = false })
   </div>;
 }
 
-function ItemCard({ row, quantities, percentages, setQuantities, setPercentages, presets, customPercent = false }) {
+function ItemCard({ row, quantities, percentages, setQuantities, presets, directMeal = false }) {
   const Icon = row.icon;
   const setQuantity = value => setQuantities(previous => ({ ...previous, [row.key]: value }));
-  const setPercent = value => setPercentages(previous => ({ ...previous, [row.key]: Math.min(100, Math.max(0, Number(value) || 0)) }));
   const selected = Number(quantities[row.key]) > 0;
   const optional = !presets;
   return <div className={`flex min-w-0 flex-col gap-3 rounded-2xl border p-3 transition duration-200 sm:p-3.5 ${selected ? 'border-violet-500/80 bg-gradient-to-br from-violet-500/[0.10] to-fuchsia-500/[0.04] shadow-lg shadow-violet-950/10' : 'border-slate-800 bg-slate-900/35 hover:border-slate-700'}`}>
     <div className="flex min-w-0 items-center gap-2.5">
-      {optional && <button type="button" role="checkbox" aria-checked={selected} aria-label={`Select ${row.label}`} onClick={() => setQuantity(selected ? 0 : 1)} className={`grid h-6 w-6 shrink-0 place-items-center rounded-md border transition ${selected ? 'border-violet-400 bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white shadow-md shadow-violet-950/40' : 'border-slate-600 bg-slate-950 text-transparent hover:border-violet-400'}`}><Check className="h-4 w-4" /></button>}
+      {optional && <button type="button" role="checkbox" aria-checked={selected} aria-label={`Select ${row.label}`} onClick={() => setQuantity(selected ? 0 : (directMeal ? 0.05 : 1))} className={`grid h-6 w-6 shrink-0 place-items-center rounded-md border transition ${selected ? 'border-violet-400 bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white shadow-md shadow-violet-950/40' : 'border-slate-600 bg-slate-950 text-transparent hover:border-violet-400'}`}><Check className="h-4 w-4" /></button>}
       <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-white/10 bg-gradient-to-br from-white/[0.09] to-white/[0.02] shadow-inner ${row.color}`}><Icon className="h-6 w-6" strokeWidth={2.1} /></span>
-      <div className="min-w-0 flex-1"><div className="truncate text-sm font-semibold text-slate-100">{row.label}</div>{customPercent ? <label className="mt-0.5 inline-flex items-center gap-1 text-xs text-slate-400">Section <input aria-label={`${row.label} percentage`} type="number" min="0" max="100" disabled={!selected} value={percentages[row.key]} onChange={event => setPercent(event.target.value)} className="w-10 border-b border-slate-600 bg-transparent text-center text-white disabled:opacity-40" />%</label> : <span className="text-xs text-slate-400">{row.percent}% share</span>}</div>
+      <div className="min-w-0 flex-1"><div className="truncate text-sm font-semibold text-slate-100">{row.label}</div><span className="text-xs text-slate-400">{directMeal ? 'Direct meal input' : `${row.percent}% share`}</span></div>
     </div>
     <div className={`flex min-h-10 items-center ${presets ? 'justify-start' : 'justify-end'}`}>
-      {presets ? <div className="flex flex-wrap gap-1.5">{presets.map(value => <button type="button" key={value} aria-pressed={Number(quantities[row.key]) === value} onClick={() => setQuantity(Number(quantities[row.key]) === value ? 0 : value)} className={`min-w-[48px] rounded-full border px-2.5 py-2 text-xs transition duration-150 ${Number(quantities[row.key]) === value ? 'border-violet-400 bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white shadow-md shadow-violet-950/30' : 'border-slate-700 bg-slate-900 text-slate-300 hover:border-violet-500/60 hover:text-white'}`}>{value}</button>)}</div> : <QuantityStepper value={quantities[row.key]} onChange={setQuantity} disabled={!selected} />}
+      {presets ? <div className="flex flex-wrap gap-1.5">{presets.map(value => <button type="button" key={value} aria-pressed={Number(quantities[row.key]) === value} onClick={() => setQuantity(Number(quantities[row.key]) === value ? 0 : value)} className={`min-w-[48px] rounded-full border px-2.5 py-2 text-xs transition duration-150 ${Number(quantities[row.key]) === value ? 'border-violet-400 bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white shadow-md shadow-violet-950/30' : 'border-slate-700 bg-slate-900 text-slate-300 hover:border-violet-500/60 hover:text-white'}`}>{value}</button>)}</div> : <QuantityStepper value={quantities[row.key]} onChange={setQuantity} disabled={!selected} step={directMeal ? 0.05 : 1} />}
     </div>
   </div>;
 }
@@ -319,8 +318,10 @@ function SummaryPanel({ sectionRows, extraEggs, totalMeal }) {
     <div className="divide-y divide-slate-800/80">
       {sectionRows.map(row => {
         const selected = row.quantity > 0;
-        const description = row.key === 'rice' ? `${Number(row.quantity).toFixed(2)} meal portion` : `${Number(row.quantity).toFixed(2)} × ${fmt(row.percent / 100)}`;
-        return <div key={row.key} className={`flex items-center justify-between gap-2 py-2.5 transition ${selected ? 'opacity-100' : 'opacity-45'}`}><div className="flex min-w-0 items-center gap-2.5"><row.icon className={`h-6 w-6 shrink-0 ${row.color}`} /><div className="min-w-0"><div className="truncate text-sm font-medium text-slate-100">{row.label} ({row.percent}%)</div><div className="truncate text-xs text-slate-400">{description}</div></div></div><span className={`shrink-0 rounded-full px-3 py-1 text-right text-sm font-semibold ${selected ? 'bg-violet-500/15 text-violet-100' : 'bg-slate-800/70 text-slate-400'}`}>{fmt(row.contribution)}<small className="block text-[10px] font-normal">meal</small></span></div>;
+        const direct = row.key === 'rice' || row.key === 'vat';
+        const description = direct ? `${Number(row.quantity).toFixed(2)} meal input` : `${Number(row.quantity).toFixed(2)} × ${fmt(row.percent / 100)}`;
+        const title = row.key === 'vat' ? row.label : `${row.label} (${row.percent}%)`;
+        return <div key={row.key} className={`flex items-center justify-between gap-2 py-2.5 transition ${selected ? 'opacity-100' : 'opacity-45'}`}><div className="flex min-w-0 items-center gap-2.5"><row.icon className={`h-6 w-6 shrink-0 ${row.color}`} /><div className="min-w-0"><div className="truncate text-sm font-medium text-slate-100">{title}</div><div className="truncate text-xs text-slate-400">{description}</div></div></div><span className={`shrink-0 rounded-full px-3 py-1 text-right text-sm font-semibold ${selected ? 'bg-violet-500/15 text-violet-100' : 'bg-slate-800/70 text-slate-400'}`}>{fmt(row.contribution)}<small className="block text-[10px] font-normal">meal</small></span></div>;
       })}
       <div className={`flex items-center justify-between gap-2 py-2.5 ${Number(extraEggs) > 0 ? '' : 'opacity-45'}`}><div className="flex min-w-0 items-center gap-2.5"><Egg className="h-6 w-6 shrink-0 text-amber-300"/><div><div className="text-sm font-medium text-slate-100">Extra Egg</div><div className="text-xs text-slate-400">{Number(extraEggs) || 0} additional eggs</div></div></div><span className="rounded-full bg-slate-800/70 px-3 py-1 text-right text-sm font-semibold text-slate-400">{fmt(0)}<small className="block text-[10px] font-normal">meal</small></span></div>
     </div>
