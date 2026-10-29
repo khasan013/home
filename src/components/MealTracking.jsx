@@ -4,7 +4,7 @@ import { useHome } from '../context/HomeContext';
 import { mealApi } from '../api';
 
 const initialQuantities = { meat: 0, vegetables: 0, egg: 0, rice: 0.1, vat: 0 };
-const initialPercentages = { meat: 75, vegetables: 10, egg: 50, rice: 10, vat: 0 };
+const initialPercentages = { meat: 75, vegetables: 10, egg: 50, rice: 100, vat: 0 };
 const itemMeta = [
   { key: 'meat', label: 'Mash/Murgi', icon: Drumstick, color: 'text-orange-400' },
   { key: 'vegetables', label: 'Vegetables', icon: Carrot, color: 'text-emerald-400' },
@@ -35,7 +35,9 @@ export default function MealTracking() {
     ...item,
     quantity: Number(quantities[item.key]) || 0,
     percent: Number(percentages[item.key]) || 0,
-    contribution: round2((Number(quantities[item.key]) || 0) * (Number(percentages[item.key]) || 0) / 100),
+    contribution: item.key === 'rice'
+      ? round2(Number(quantities[item.key]) || 0)
+      : round2((Number(quantities[item.key]) || 0) * (Number(percentages[item.key]) || 0) / 100),
   })), [quantities, percentages]);
   const totalMeal = round2(sectionRows.reduce((sum, row) => sum + row.contribution, 0));
 
@@ -204,7 +206,7 @@ export default function MealTracking() {
           <div className="grid gap-3 sm:grid-cols-3">{sectionRows.slice(0, 3).map(row => <ItemCard key={row.key} row={row} quantities={quantities} percentages={percentages} setQuantities={setQuantities} setPercentages={setPercentages} />)}</div>
           <div className="grid gap-3 sm:grid-cols-2"><ItemCard row={sectionRows[3]} quantities={quantities} percentages={percentages} setQuantities={setQuantities} presets={[0.05, 0.1, 0.15]} /><ItemCard row={sectionRows[4]} quantities={quantities} percentages={percentages} setQuantities={setQuantities} setPercentages={setPercentages} customPercent /></div>
           <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 p-3"><div className="flex items-center gap-2"><Egg className="h-8 w-8 text-amber-300"/><span>Extra Egg <small className="block text-slate-400">additional eggs (same as before)</small></span></div><QuantityStepper value={extraEggs} onChange={setExtraEggs} integer /></div>
-          <aside className="rounded-xl border border-white/10 bg-slate-900/70 p-4"><div className="mb-2 flex items-center gap-2"><BarChart3 className="text-violet-400"/><div><b>Total Meal (Estimated)</b><small className="block text-slate-400">Quantity × section percentage</small></div></div>{sectionRows.map(row => <div key={row.key} className="flex justify-between border-b border-white/5 py-2"><span>{row.label} ({row.percent}%) <small className="block text-slate-400">{Number(row.quantity).toFixed(2)} × {row.percent}%</small></span><b>{fmt(row.contribution)} meal</b></div>)}<div className="flex justify-between pt-3 text-lg font-bold"><span>∑ Total Meal</span><span className="rounded-lg bg-violet-600 px-4 py-2">{fmt(totalMeal)} meal</span></div></aside>
+          <aside className="rounded-xl border border-white/10 bg-slate-900/70 p-4"><div className="mb-2 flex items-center gap-2"><BarChart3 className="text-violet-400"/><div><b>Total Meal (Estimated)</b><small className="block text-slate-400">Selected quantity × meal value</small></div></div>{sectionRows.map(row => <div key={row.key} className="flex justify-between border-b border-white/5 py-2"><span>{row.label} ({row.percent}%) <small className="block text-slate-400">{row.key === 'rice' ? `${Number(row.quantity).toFixed(2)} meal value` : `${Number(row.quantity).toFixed(2)} × ${fmt(row.percent / 100)} meal`}</small></span><b>{fmt(row.contribution)} meal</b></div>)}<div className="flex justify-between pt-3 text-lg font-bold"><span>∑ Total Meal</span><span className="rounded-lg bg-violet-600 px-4 py-2">{fmt(totalMeal)} meal</span></div></aside>
           <button type="submit" disabled={saving} className="w-full rounded-lg bg-purple-500 py-3 font-semibold hover:bg-purple-600 disabled:opacity-60">{saving ? 'Saving…' : 'Save Meal'}</button>
         </form>
       )}
@@ -301,6 +303,6 @@ function ItemCard({ row, quantities, percentages, setQuantities, setPercentages,
   const setPercent = value => setPercentages(previous => ({ ...previous, [row.key]: Math.min(100, Math.max(0, Number(value) || 0)) }));
   return <div className="flex min-w-0 items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/[0.03] p-3">
     <div className="flex min-w-0 items-center gap-2"><Icon className={`h-8 w-8 shrink-0 ${row.color}`} /><div className="min-w-0"><div className="truncate text-sm font-semibold">{row.label}</div>{customPercent ? <label className="text-xs text-slate-400">Section % <input aria-label={`${row.label} percentage`} type="number" min="0" max="100" value={percentages[row.key]} onChange={event => setPercent(event.target.value)} className="w-12 border-b border-slate-600 bg-transparent text-center text-white" /></label> : <span className="text-xs text-slate-400">{row.percent}%</span>}</div></div>
-    {presets ? <div className="flex shrink-0 gap-1">{presets.map(value => <button type="button" key={value} onClick={() => setQuantity(value)} className={`rounded-full border px-2 py-2 text-xs ${Number(quantities[row.key]) === value ? 'border-violet-400 bg-violet-600' : 'border-slate-700 bg-slate-900'}`}>{value.toFixed(2)}</button>)}</div> : <QuantityStepper value={quantities[row.key]} onChange={setQuantity} />}
+    {presets ? <div className="flex shrink-0 gap-1">{presets.map(value => <button type="button" key={value} onClick={() => setQuantity(value)} className={`rounded-full border px-2 py-2 text-xs ${Number(quantities[row.key]) === value ? 'border-violet-400 bg-violet-600' : 'border-slate-700 bg-slate-900'}`}>{value.toFixed(2)}</button>)}</div> : customPercent ? <QuantityStepper value={quantities[row.key]} onChange={setQuantity} /> : <select aria-label={`${row.label} quantity`} value={quantities[row.key]} onChange={event => setQuantity(Number(event.target.value))} className="rounded-full border border-slate-700 bg-slate-900 px-4 py-2 text-white">{Array.from({ length: 11 }, (_, index) => <option key={index} value={index}>{index} {index === 1 ? 'item' : 'items'}</option>)}</select>}
   </div>;
 }
