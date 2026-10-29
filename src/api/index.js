@@ -148,6 +148,12 @@ export const reportApi = {
 
 // ── Admin ─────────────────────────────────────────────────
 export const adminApi = {
+  getWaterBottlePrice: (homeId) =>
+    request('GET', `/admin/${homeId}/water-bottle-price`),
+
+  setWaterBottlePrice: (homeId, waterBottlePrice) =>
+    request('PUT', `/admin/${homeId}/water-bottle-price`, { waterBottlePrice }),
+
   // Members
   getMembers: (homeId) =>
     request('GET', `/admin/${homeId}/members`),

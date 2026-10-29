@@ -10,7 +10,6 @@ export default function WaterSupply() {
   const { currentHome, expenses, setExpenses } = useHome();
   const homeId = currentHome?._id;
   const [title, setTitle] = useState('Drinking water supply');
-  const [bottlePrice, setBottlePrice] = useState('');
   const [bottleQty, setBottleQty] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -22,23 +21,23 @@ export default function WaterSupply() {
   const waterExpenses = useMemo(() => expenses.filter(expense => expense.category === 'WaterSupply'), [expenses]);
   const total = waterExpenses.reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
   const totalBottles = waterExpenses.reduce((sum, expense) => sum + Number(expense.bottleQty || 0), 0);
-  const estimatedAmount = (Number(bottlePrice) || 0) * (Number(bottleQty) || 0);
+  const bottlePrice = Number(currentHome?.waterBottlePrice) || 0;
+  const estimatedAmount = bottlePrice * (Number(bottleQty) || 0);
 
   const handleSubmit = async event => {
     event.preventDefault();
     setError('');
     if (!title.trim()) return setError('Please enter a description.');
-    if (!Number.isFinite(Number(bottlePrice)) || Number(bottlePrice) <= 0) return setError('Bottle price must be greater than zero.');
+    if (bottlePrice <= 0) return setError('The home admin must set a water bottle price before a purchase can be added.');
     if (!Number.isFinite(Number(bottleQty)) || Number(bottleQty) <= 0) return setError('Bottle quantity must be greater than zero.');
     setBusy(true);
     try {
       const expense = await expenseApi.add(homeId, {
         title: title.trim(), category: 'WaterSupply',
-        bottlePrice: Number(bottlePrice), bottleQty: Number(bottleQty),
+        bottleQty: Number(bottleQty),
       });
       setExpenses(previous => [expense, ...previous]);
       setTitle('Drinking water supply');
-      setBottlePrice('');
       setBottleQty('');
     } catch (err) {
       setError(err.message || 'Could not add water supply.');
@@ -60,13 +59,13 @@ export default function WaterSupply() {
     </section>
 
     <section className="rounded-2xl border border-slate-700/80 bg-gradient-to-br from-slate-900/95 to-slate-950/95 p-5 shadow-xl shadow-black/20 sm:p-6">
-      <div className="mb-4"><h2 className="text-lg font-semibold">Add Water Supply</h2><p className="mt-1 text-sm text-slate-400">Enter the price per bottle and quantity. The total is shared equally with home members.</p></div>
+      <div className="mb-4"><h2 className="text-lg font-semibold">Add Water Supply</h2><p className="mt-1 text-sm text-slate-400">Bottle price is set by your home admin. Add the quantity and the total will be shared equally.</p></div>
       {error && <p role="alert" className="mb-3 rounded-lg border border-red-400/20 bg-red-400/10 px-3 py-2 text-sm text-red-300">{error}</p>}
       <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Field label="Description"><input value={title} onChange={event => setTitle(event.target.value)} className={inputClass} placeholder="Drinking water supply" /></Field>
-        <Field label="Price per bottle (৳)"><input type="number" min="0.01" step="0.01" value={bottlePrice} onChange={event => setBottlePrice(event.target.value)} className={inputClass} placeholder="e.g. 30" /></Field>
         <Field label="Bottle quantity"><input type="number" min="1" step="1" value={bottleQty} onChange={event => setBottleQty(event.target.value)} className={inputClass} placeholder="e.g. 4" /></Field>
-        <div className="flex flex-col justify-end gap-2"><div className="text-xs text-slate-400">Purchase total <span className="ml-1 font-semibold text-sky-200">{money(estimatedAmount)}</span></div><button type="submit" disabled={busy} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-sky-600 to-cyan-500 px-4 py-2.5 font-semibold text-white shadow-lg shadow-sky-950/30 transition hover:brightness-110 disabled:cursor-wait disabled:opacity-60"><Plus className="h-4 w-4" />{busy ? 'Adding…' : 'Add Water Supply'}</button></div>
+        <div className="flex items-center rounded-xl border border-slate-800 bg-slate-950/60 px-3.5 py-3"><div><div className="text-xs text-slate-400">Admin-set bottle price</div><div className="mt-1 font-semibold text-sky-200">{bottlePrice > 0 ? `${money(bottlePrice)} / bottle` : 'Not set yet'}</div></div></div>
+        <div className="flex flex-col justify-end gap-2"><div className="text-xs text-slate-400">Purchase total <span className="ml-1 font-semibold text-sky-200">{money(estimatedAmount)}</span></div><button type="submit" disabled={busy || bottlePrice <= 0} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-sky-600 to-cyan-500 px-4 py-2.5 font-semibold text-white shadow-lg shadow-sky-950/30 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"><Plus className="h-4 w-4" />{busy ? 'Adding…' : 'Add Water Supply'}</button></div>
       </form>
     </section>
 

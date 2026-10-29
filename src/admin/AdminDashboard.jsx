@@ -92,7 +92,7 @@ function autoBillKey(homeId) {
 
 // ─────────────────────────────────────────────────────────
 export default function AdminDashboard() {
-  const { currentHome, expenses, setExpenses } = useHome();
+  const { currentHome, setCurrentHome, setHomes, expenses, setExpenses } = useHome();
   const homeId = currentHome?._id;
 
   const [members,   setMembers]   = useState([]);
@@ -102,6 +102,7 @@ export default function AdminDashboard() {
   const [loading,   setLoading]   = useState(true);
   const [busy,      setBusy]      = useState('');
   const [toast,     setToast]     = useState(null);
+  const [waterBottlePrice, setWaterBottlePrice] = useState(String(currentHome?.waterBottlePrice || ''));
 
   // penalty form
   const [penForm, setPenForm] = useState({ userId: '', meals: '', reason: '' });
@@ -213,6 +214,33 @@ export default function AdminDashboard() {
   }, [homeId, setExpenses]);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    setWaterBottlePrice(currentHome?.waterBottlePrice ? String(currentHome.waterBottlePrice) : '');
+  }, [homeId, currentHome?.waterBottlePrice]);
+
+  const handleSaveWaterBottlePrice = async event => {
+    event.preventDefault();
+    const price = Number(waterBottlePrice);
+    if (!Number.isFinite(price) || price <= 0) {
+      return toast$('Bottle price must be greater than zero.', 'error');
+    }
+
+    setBusy('water-price');
+    try {
+      const result = await adminApi.setWaterBottlePrice(homeId, price);
+      setCurrentHome(previous => previous ? { ...previous, waterBottlePrice: result.waterBottlePrice } : previous);
+      setHomes(previous => previous.map(home => home._id === homeId
+        ? { ...home, waterBottlePrice: result.waterBottlePrice }
+        : home));
+      setWaterBottlePrice(String(result.waterBottlePrice));
+      toast$('Water bottle price saved.');
+    } catch (error) {
+      toast$(error.message || 'Could not save water bottle price.', 'error');
+    } finally {
+      setBusy('');
+    }
+  };
 
   // ── Auto-fill egg stats from expense context ──────────
  useEffect(() => {
@@ -537,6 +565,27 @@ const handleSendBill = async (e) => {
         <Stat label="Penalty Meals"   value={`+${totalPenalty}`} color="#ef4444" />
         <Stat label="Eggs Consumed"   value={totalEggsConsumed} color="#f59e0b" />
       </div>
+
+      <Card title="💧 Water Bottle Price" accent="#38bdf8">
+        <p style={{ color: '#9ca3af', fontSize: 12, marginTop: 0, marginBottom: 12 }}>
+          Set the price once for this home. Members will choose bottle quantities; the saved price is applied automatically.
+        </p>
+        <form onSubmit={handleSaveWaterBottlePrice} style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'flex-end' }}>
+          <label style={{ display: 'block', color: '#bae6fd', fontSize: 12, minWidth: 220, flex: '0 1 320px' }}>
+            Price per bottle (৳)
+            <input
+              style={{ ...inp, marginTop: 5, borderColor: '#38bdf880' }}
+              type="number" min="0.01" step="0.01" placeholder="e.g. 30.00"
+              value={waterBottlePrice}
+              onChange={event => setWaterBottlePrice(event.target.value)}
+            />
+          </label>
+          <button type="submit" style={btn('#0ea5e9')} disabled={busy === 'water-price'}>
+            {busy === 'water-price' ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <CheckCircle2 size={14} />}
+            {busy === 'water-price' ? 'Saving…' : 'Save Bottle Price'}
+          </button>
+        </form>
+      </Card>
 
       {/* ── COST & BILL ── */}
       <Card title="💰 Cost Calculation & Send Bills" accent="#22c55e">
