@@ -8,7 +8,7 @@ import { formatCount } from '../utils/numberFormat';
 const money = value => `৳${Number(value || 0).toFixed(2)}`;
 
 export default function MemberManagement() {
-  const { members, currentHome, meals } = useHome();
+  const { members, currentHome, meals, expenses } = useHome();
   const [latestBill, setLatestBill] = useState(null);
   const [copied,     setCopied]     = useState(false);
   const [joinCode,   setJoinCode]   = useState('');
@@ -123,6 +123,23 @@ export default function MemberManagement() {
               const memberId = member.user?._id || member.user?.id || member.user;
               const usage = memberUsage[String(memberId)] || { meals: 0, eggs: 0 };
               const billEntry = latestBill?.breakdown?.find(item => String(item.userId) === String(memberId));
+              const excludedWaterUsers = new Set((currentHome?.waterBillExcludedUsers || []).map(user => String(user?._id || user)));
+              const billWaterExpenses = (expenses || []).filter(expense => {
+                if (expense.category !== 'WaterSupply' || expense.splitEqually === false) return false;
+                const expenseDate = new Date(expense.createdAt || expense.date);
+                const start = latestBill?.periodStart ? new Date(latestBill.periodStart) : null;
+                const end = latestBill?.periodEnd ? new Date(latestBill.periodEnd) : null;
+                return start && end && !Number.isNaN(expenseDate.getTime()) && expenseDate >= start && expenseDate < end;
+              }).reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
+              const billWaterCost = Number(latestBill?.waterCost ?? latestBill?.costSummary?.water ?? 0) || billWaterExpenses;
+              const eligibleMembers = members.filter(homeMember => {
+                const userId = homeMember.user?._id || homeMember.user?.id || homeMember.user;
+                return userId && !excludedWaterUsers.has(String(userId));
+              }).length;
+              const storedWaterShare = Number(billEntry?.waterShare || 0);
+              const waterShare = storedWaterShare || (excludedWaterUsers.has(String(memberId)) || !eligibleMembers
+                ? 0
+                : billWaterCost / eligibleMembers);
 
               return (
               <div key={member._id || memberId} className="bg-white/5 border border-white/10 rounded-lg p-4 flex flex-col gap-4">
@@ -156,7 +173,7 @@ export default function MemberManagement() {
                   </div>
                   {billEntry ? <div className="grid gap-2 sm:grid-cols-2">
                     <div className="flex items-center justify-between gap-2 rounded-md bg-white/5 px-3 py-2"><span className="text-sm text-gray-300">Meal bill</span><strong className="text-white">{money(billEntry.share)}</strong></div>
-                    <div className="flex items-center justify-between gap-2 rounded-md border border-sky-400/20 bg-sky-400/5 px-3 py-2"><span className="text-sm font-semibold text-sky-200">Water supply bill</span><strong className="text-sky-100">{money(billEntry.waterShare)}</strong></div>
+                    <div className="flex items-center justify-between gap-2 rounded-md border border-sky-400/20 bg-sky-400/5 px-3 py-2"><span className="text-sm font-semibold text-sky-200">Water supply bill</span><strong className="text-sky-100">{money(waterShare)}</strong></div>
                   </div> : <p className="text-sm text-gray-400">{latestBill ? 'No individual bill breakdown for this member.' : 'Bills will appear here after the first bill is sent.'}</p>}
                 </div>
               </div>

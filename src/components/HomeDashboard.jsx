@@ -112,7 +112,15 @@ export default function HomeDashboard({ activeNav }) {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const totalExpense = report?.totalExpense ?? expenses.reduce((s, e) => s + e.amount, 0);
+  const waterSupplyExpense = report?.waterSupplyExpense ?? expenses
+    .filter(expense => expense.category === 'WaterSupply')
+    .reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
+  const reportedExpense = report?.totalExpense ?? expenses.reduce((s, e) => s + Number(e.amount || 0), 0);
+  // Older API responses include water in totalExpense; subtract it until the
+  // backend returns the separate waterSupplyExpense field.
+  const totalExpense = report?.waterSupplyExpense !== undefined
+    ? reportedExpense
+    : Math.max(reportedExpense - waterSupplyExpense, 0);
   const totalMeals   = report?.totalMeals   ?? meals.reduce((s, m) => s + m.mealCount, 0);
   const perMeal      = report?.perMeal ?? (totalMeals ? totalExpense / totalMeals : 0);
 
@@ -153,6 +161,14 @@ export default function HomeDashboard({ activeNav }) {
       textColor: '#6d28d9',
     },
     {
+      label: 'Water Supply',
+      value: `৳${waterSupplyExpense.toFixed(2)}`,
+      icon: '💧',
+      accent: '#0ea5e9',
+      lightBg: '#e0f2fe',
+      textColor: '#0369a1',
+    },
+    {
       label: 'Members',
       value: String(members.length),
       icon: '👥',
@@ -181,7 +197,7 @@ export default function HomeDashboard({ activeNav }) {
   return (
     <div className="dashboard-layout space-y-5 md:space-y-6">
       {/* ── Header Stats (white cards) ── */}
-      <div className="dashboard-stats grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3 md:gap-4">
+      <div className="dashboard-stats grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 md:gap-4">
         {stats.map(({ label, value, icon, accent, lightBg }) => (
           <div
             key={label}
