@@ -106,13 +106,13 @@ export default function EmergencyContacts() {
     <div className="space-y-5">
       <div>
         <h2 className="text-2xl font-bold text-white">Emergency Contacts</h2>
-        <p className="text-sm text-gray-400">Caretaker and gas service contacts for this home.</p>
+        <p className="text-sm text-gray-400">Water Supply and gas service contacts for this home.</p>
       </div>
 
       <form onSubmit={handleSave} className="space-y-4">
         <div className="grid gap-4 md:grid-cols-2">
           <ContactCard
-            title="Caretaker"
+            title="Water Supply"
             nameKey="caretakerName"
             phoneKey="caretakerPhone"
             contacts={contacts}

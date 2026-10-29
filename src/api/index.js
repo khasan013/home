@@ -108,6 +108,9 @@ export const homeApi = {
 
   getInviteCode: (homeId) =>
     request('GET', `/home/${homeId}/invite`),
+
+  leave: (homeId) =>
+    request('DELETE', `/home/${homeId}/leave`),
 };
 
 // ── Meals ─────────────────────────────────────────────────

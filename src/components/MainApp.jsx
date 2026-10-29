@@ -192,7 +192,8 @@ function SidebarContent({
 export default function MainApp() {
   const { user, logout }               = useAuth();
   const {
-    homes, setHomes, currentHome, setCurrentHome, resetHomeState,
+    homes, setHomes, currentHome, setCurrentHome,
+    setMembers, setMeals, setExpenses, setReport,
   } = useHome();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showNewHome,  setShowNewHome]  = useState(false);
@@ -200,6 +201,9 @@ export default function MainApp() {
   const [activeNav,    setActiveNav]    = useState('Dashboard');
   const [error,        setError]        = useState('');
   const [isMobile,     setIsMobile]     = useState(window.innerWidth < 768);
+  const [leaveBusy,    setLeaveBusy]    = useState(false);
+  const [leaveError,   setLeaveError]   = useState('');
+  const [leaveSuccess, setLeaveSuccess] = useState('');
 
   // Search to join home
   const [searchCode,    setSearchCode]    = useState('');
@@ -289,7 +293,39 @@ export default function MainApp() {
 
   const handleNavClick = (label) => {
     setActiveNav(label);
+    setLeaveError('');
+    setLeaveSuccess('');
     if (isMobile) setMobileMenuOpen(false);
+  };
+
+  const handleLeaveHome = async () => {
+    if (!currentHome?._id || leaveBusy) return;
+    const homeName = currentHome.name || 'this home';
+    if (!window.confirm(`Leave ${homeName}? You will lose access to its meals, bills, and expenses.`)) return;
+
+    setLeaveBusy(true);
+    setLeaveError('');
+    setLeaveSuccess('');
+    try {
+      await homeApi.leave(currentHome._id);
+      const fallbackHomes = homes.filter(home => String(home._id) !== String(currentHome._id));
+      const remainingHomes = await homeApi.getAll().catch(() => fallbackHomes);
+      const nextHomes = Array.isArray(remainingHomes) ? remainingHomes : fallbackHomes;
+      const nextHome = nextHomes[0] || null;
+      setHomes(nextHomes);
+      setCurrentHome(nextHome);
+      setMembers(nextHome?.members || []);
+      setMeals([]);
+      setExpenses([]);
+      setReport(null);
+      setActiveNav('Dashboard');
+      setLeaveSuccess(`You left ${homeName}.`);
+      if (!nextHome && user?.userId) localStorage.removeItem(`lastHomeId:${user.userId}`);
+    } catch (err) {
+      setLeaveError(err.message || 'Could not leave this home.');
+    } finally {
+      setLeaveBusy(false);
+    }
   };
 
   // Shared props passed down to SidebarContent
@@ -372,6 +408,14 @@ export default function MainApp() {
               <EmergencyContacts />
             ) : activeNav === 'Water Supply' ? (
               <WaterSupply />
+            ) : activeNav === 'Settings' ? (
+              <HomeSettings
+                homeName={currentHome.name}
+                onLeave={handleLeaveHome}
+                busy={leaveBusy}
+                error={leaveError}
+                success={leaveSuccess}
+              />
             ) : (
               <HomeDashboard key={activeNav} activeNav={activeNav} />
             )
@@ -379,12 +423,40 @@ export default function MainApp() {
             <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
               <AlertCircle className="w-12 h-12 md:w-16 md:h-16 text-gray-600" />
               <p className="text-gray-400 text-base md:text-lg">
-                No home selected. Create or join one from the sidebar.
+                {leaveSuccess || 'No home selected. Create or join one from the sidebar.'}
               </p>
             </div>
           )}
         </div>
       </div>
     </div>
+  );
+}
+
+function HomeSettings({ homeName, onLeave, busy, error, success }) {
+  return (
+    <section className="mx-auto max-w-3xl space-y-5">
+      <header>
+        <h1 className="text-2xl font-bold text-white">Home Settings</h1>
+        <p className="mt-1 text-sm text-gray-400">Manage your membership in {homeName}.</p>
+      </header>
+
+      <div className="rounded-2xl border border-red-400/20 bg-slate-950/60 p-5 sm:p-6">
+        <h2 className="text-lg font-semibold text-white">Leave this home</h2>
+        <p className="mt-2 text-sm leading-6 text-gray-400">
+          Leaving removes your access to this home. If you are the only admin, another member will become admin.
+        </p>
+        {error && <p role="alert" className="mt-4 rounded-lg border border-red-400/20 bg-red-400/10 px-3 py-2 text-sm text-red-300">{error}</p>}
+        {success && <p role="status" className="mt-4 rounded-lg border border-emerald-400/20 bg-emerald-400/10 px-3 py-2 text-sm text-emerald-300">{success}</p>}
+        <button
+          type="button"
+          onClick={onLeave}
+          disabled={busy}
+          className="mt-5 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-2.5 font-semibold text-red-200 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {busy ? 'Leaving…' : 'Leave Home'}
+        </button>
+      </div>
+    </section>
   );
 }
