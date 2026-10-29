@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Plus, Trash2, BarChart3, Drumstick, Egg, Soup, Carrot, Utensils, Check } from 'lucide-react';
 import { useHome } from '../context/HomeContext';
 import { mealApi } from '../api';
+import { formatCount } from '../utils/numberFormat';
 
 const initialQuantities = { meat: 0, vegetables: 0, egg: 0, rice: 0.1, vat: 0 };
 const initialPercentages = { meat: 75, vegetables: 10, egg: 50, rice: 100, vat: 100 };
@@ -239,7 +240,7 @@ export default function MealTracking() {
                   const cell = grouped[date][u];
 
                   const display = cell
-                    ? `${cell.meals > 0 ? fmt(cell.meals) + 'V' : ''} ${cell.eggs > 0 ? cell.eggs + 'D' : ''}`.trim()
+                    ? `${cell.meals > 0 ? fmt(cell.meals) + 'V' : ''} ${cell.eggs > 0 ? formatCount(cell.eggs) + 'D' : ''}`.trim()
                     : '0';
 
                   const isEditing =
@@ -331,7 +332,7 @@ function SummaryPanel({ sectionRows, extraEggs, totalMeal }) {
         const title = row.key === 'vat' ? row.label : `${row.label} (${row.percent}%)`;
         return <div key={row.key} className={`flex items-center justify-between gap-2 py-2.5 transition ${selected ? 'opacity-100' : 'opacity-45'}`}><div className="flex min-w-0 items-center gap-2.5"><row.icon className={`h-6 w-6 shrink-0 ${row.color}`} /><div className="min-w-0"><div className="truncate text-sm font-medium text-slate-100">{title}</div><div className="truncate text-xs text-slate-400">{description}</div></div></div><span className={`shrink-0 rounded-full px-3 py-1 text-right text-sm font-semibold ${selected ? 'bg-violet-500/15 text-violet-100' : 'bg-slate-800/70 text-slate-400'}`}>{fmt(row.contribution)}<small className="block text-[10px] font-normal">meal</small></span></div>;
       })}
-      <div className={`flex items-center justify-between gap-2 py-2.5 ${Number(extraEggs) > 0 ? '' : 'opacity-45'}`}><div className="flex min-w-0 items-center gap-2.5"><Egg className="h-6 w-6 shrink-0 text-amber-300"/><div><div className="text-sm font-medium text-slate-100">Extra Egg</div><div className="text-xs text-slate-400">Included in total eggs consumed</div></div></div><span className="shrink-0 rounded-full bg-amber-400/10 px-3 py-1 text-right text-sm font-semibold text-amber-200">{Number(extraEggs) || 0}<small className="ml-1 font-medium">{Number(extraEggs) === 1 ? 'egg' : 'eggs'}</small></span></div>
+      <div className={`flex items-center justify-between gap-2 py-2.5 ${Number(extraEggs) > 0 ? '' : 'opacity-45'}`}><div className="flex min-w-0 items-center gap-2.5"><Egg className="h-6 w-6 shrink-0 text-amber-300"/><div><div className="text-sm font-medium text-slate-100">Extra Egg</div><div className="text-xs text-slate-400">Included in total eggs consumed</div></div></div><span className="shrink-0 rounded-full bg-amber-400/10 px-3 py-1 text-right text-sm font-semibold text-amber-200">{formatCount(extraEggs)}<small className="ml-1 font-medium">{Number(extraEggs) === 1 ? 'egg' : 'eggs'}</small></span></div>
     </div>
     <div className="mt-2 flex items-center justify-between border-t border-slate-700/90 pt-3"><div className="flex items-center gap-3"><span className="text-3xl text-slate-300">∑</span><span className="font-semibold text-white">Total Meal</span></div><span className="rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-500 px-5 py-2 text-center text-xl font-bold text-white shadow-lg shadow-violet-950/30">{fmt(totalMeal)}<small className="block text-xs font-medium">meal</small></span></div>
   </aside>;

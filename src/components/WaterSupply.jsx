@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Droplets, Plus, GlassWater, CalendarDays } from 'lucide-react';
 import { useHome } from '../context/HomeContext';
 import { expenseApi } from '../api';
+import { formatCount } from '../utils/numberFormat';
 
 const money = value => `৳${Number(value || 0).toFixed(2)}`;
 const inputClass = 'w-full rounded-xl border border-slate-700 bg-slate-950/80 px-3.5 py-3 text-white outline-none transition placeholder:text-slate-600 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20';
@@ -54,7 +55,7 @@ export default function WaterSupply() {
 
     <section className="grid gap-3 sm:grid-cols-3">
       <SummaryCard label="Total Water Cost" value={money(total)} icon={<Droplets className="h-5 w-5" />} />
-      <SummaryCard label="Bottles Purchased" value={String(totalBottles)} icon={<GlassWater className="h-5 w-5" />} />
+      <SummaryCard label="Bottles Purchased" value={formatCount(totalBottles)} icon={<GlassWater className="h-5 w-5" />} />
       <SummaryCard label="Shared Equally" value="Yes" icon={<span className="text-lg">÷</span>} />
     </section>
 
@@ -71,7 +72,7 @@ export default function WaterSupply() {
 
     <section className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/60">
       <div className="border-b border-slate-800 px-5 py-4"><h2 className="font-semibold">Recent Water Supply</h2></div>
-      {waterExpenses.length === 0 ? <div className="px-5 py-12 text-center text-sm text-slate-400">No water-supply purchases recorded yet.</div> : <div className="divide-y divide-slate-800/80">{waterExpenses.map(expense => <div key={expense._id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-4"><div className="flex min-w-0 items-center gap-3"><span className="rounded-xl bg-sky-400/10 p-2.5 text-sky-300"><GlassWater className="h-5 w-5" /></span><div className="min-w-0"><div className="truncate font-medium">{expense.title}</div><div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-400"><span>{expense.bottleQty || 0} bottles × {money(expense.bottlePrice)}</span><span>·</span><span className="inline-flex items-center gap-1"><CalendarDays className="h-3 w-3" />{new Date(expense.createdAt).toLocaleDateString()}</span></div></div></div><div className="font-semibold text-sky-200">{money(expense.amount)}</div></div>)}</div>}
+      {waterExpenses.length === 0 ? <div className="px-5 py-12 text-center text-sm text-slate-400">No water-supply purchases recorded yet.</div> : <div className="divide-y divide-slate-800/80">{waterExpenses.map(expense => <div key={expense._id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-4"><div className="flex min-w-0 items-center gap-3"><span className="rounded-xl bg-sky-400/10 p-2.5 text-sky-300"><GlassWater className="h-5 w-5" /></span><div className="min-w-0"><div className="truncate font-medium">{expense.title}</div><div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-400"><span>{formatCount(expense.bottleQty || 0)} bottles × {money(expense.bottlePrice)}</span><span>·</span><span className="inline-flex items-center gap-1"><CalendarDays className="h-3 w-3" />{new Date(expense.createdAt).toLocaleDateString()}</span></div></div></div><div className="font-semibold text-sky-200">{money(expense.amount)}</div></div>)}</div>}
     </section>
   </div>;
 }

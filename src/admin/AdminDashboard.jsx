@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useHome } from '../context/HomeContext';
 import { adminApi, mealApi, expenseApi } from '../api';
+import { formatCount } from '../utils/numberFormat';
 
 // ── tiny toast ────────────────────────────────────────────
 function Toast({ msg, type, onClose }) {
@@ -560,10 +561,10 @@ const handleSendBill = async (e) => {
       {/* ── STATS ── */}
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 24 }}>
         <Stat label="Members"         value={members.length}    color="#6366f1" />
-        <Stat label="Total Meals"     value={totalMeals}        color="#22c55e" />
+        <Stat label="Total Meals"     value={formatCount(totalMeals)} color="#22c55e" />
         <Stat label="Penalties"       value={penalties.length}  color="#f59e0b" />
-        <Stat label="Penalty Meals"   value={`+${totalPenalty}`} color="#ef4444" />
-        <Stat label="Eggs Consumed"   value={totalEggsConsumed} color="#f59e0b" />
+        <Stat label="Penalty Meals"   value={`+${formatCount(totalPenalty)}`} color="#ef4444" />
+        <Stat label="Eggs Consumed"   value={formatCount(totalEggsConsumed)} color="#f59e0b" />
       </div>
 
       <Card title="💧 Water Bottle Price" accent="#38bdf8">
@@ -816,7 +817,7 @@ const handleSendBill = async (e) => {
                 {penalties.map(p => (
                   <tr key={p._id}>
                     <td>{p.userId?.firstName} {p.userId?.lastName}</td>
-                    <td><span style={{ color: '#ef4444', fontWeight: 700 }}>+{p.amount}</span></td>
+                    <td><span style={{ color: '#ef4444', fontWeight: 700 }}>+{formatCount(p.amount)}</span></td>
                     <td style={{ color: '#9ca3af' }}>{p.reason || '—'}</td>
                     <td style={{ color: '#6b7280', fontSize: 12 }}>{new Date(p.createdAt).toLocaleDateString()}</td>
                     <td>
@@ -880,8 +881,8 @@ const handleSendBill = async (e) => {
               <tr key={m._id}>
                 <td style={{ fontWeight: 500 }}>{m.userId?.firstName || m.userId?.email || '—'}</td>
                 <td style={{ color: '#9ca3af', fontSize: 12 }}>{new Date(m.date).toLocaleDateString()}</td>
-                <td>{m.mealCount}</td>
-                <td>{m.eggsCount}</td>
+                <td>{formatCount(m.mealCount)}</td>
+                <td>{formatCount(m.eggsCount)}</td>
                 <td>
                   {m.isPenalty ? (
                     <span style={{ background: '#7f1d1d', color: '#fca5a5', borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 600 }}>

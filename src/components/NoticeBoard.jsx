@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Minus, Plus, Trash2, X } from 'lucide-react';
 import { noticeApi } from '../api';
+import { formatCount } from '../utils/numberFormat';
 import { useAuth } from '../context/AuthContext';
 import { useHome } from '../context/HomeContext';
 
@@ -84,7 +85,7 @@ export default function NoticeBoard() {
       if (form.category === 'waterSupply') {
         body.bottlePrice = Number(form.bottlePrice);
         body.bottleQty = Number(form.bottleQty);
-        body.message = form.message || `${form.bottleQty} bottle(s) x Tk ${form.bottlePrice} = ${money(waterTotal)}`;
+        body.message = form.message || `${formatCount(form.bottleQty)} bottle(s) x Tk ${form.bottlePrice} = ${money(waterTotal)}`;
       }
       const notice = await noticeApi.create(body);
       if (notice?.expenseId) {
@@ -164,7 +165,7 @@ export default function NoticeBoard() {
                   {notice.category === 'waterSupply' && (
                     <div className="mt-3 grid gap-2 rounded-lg border border-cyan-300/20 bg-cyan-400/10 p-3 text-sm text-cyan-100 sm:grid-cols-3">
                       <span>Price: {money(notice.bottlePrice)}</span>
-                      <span>Bottles: {notice.bottleQty}</span>
+                      <span>Bottles: {formatCount(notice.bottleQty)}</span>
                       <span>Total: {money(notice.waterTotal)}</span>
                     </div>
                   )}

@@ -9,6 +9,7 @@ import MealTracking     from './MealTracking';
 import ExpenseTracker   from './ExpenseTracker';
 import MemberManagement from './MemberManagement';
 import { reportApi, homeApi, expenseApi, mealApi } from '../api';
+import { formatCount } from '../utils/numberFormat';
 
 const COLORS = ['#8b5cf6', '#ec4899', '#06b6d4', '#f59e0b'];
 
@@ -145,7 +146,7 @@ export default function HomeDashboard({ activeNav }) {
     },
     {
       label: 'Total Meals',
-      value: String(totalMeals),
+      value: formatCount(totalMeals),
       icon: '🍽️',
       accent: '#8b5cf6',
       lightBg: '#f5f3ff',
@@ -169,7 +170,7 @@ export default function HomeDashboard({ activeNav }) {
     },
     {
       label: 'Total Eggs Consumed',
-      value: String(totalEggsConsumed),
+      value: formatCount(totalEggsConsumed),
       icon: '🥚',
       accent: '#f59e0b',
       lightBg: '#fffbeb',
@@ -250,12 +251,12 @@ export default function HomeDashboard({ activeNav }) {
                 <BarChart data={barData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
                   <XAxis dataKey="day" stroke="rgba(255,255,255,0.5)" />
-                  <YAxis stroke="rgba(255,255,255,0.5)" />
+                  <YAxis stroke="rgba(255,255,255,0.5)" tickFormatter={formatCount} />
                   <Tooltip contentStyle={{
                     backgroundColor: 'rgba(15,23,42,0.9)',
                     border: '1px solid rgba(255,255,255,0.2)',
                     borderRadius: '8px',
-                  }} />
+                  }} formatter={value => formatCount(value)} />
                   <Legend />
                   <Bar dataKey="meals" fill="#8b5cf6" name="Meals" />
                   <Bar dataKey="eggs"  fill="#f59e0b" name="Eggs"  />

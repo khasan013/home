@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { PlusCircle, Save, Trash2, X } from 'lucide-react';
 import { useHome } from '../context/HomeContext';
 import { expenseApi } from '../api';
+import { formatCount } from '../utils/numberFormat';
 
 const CATEGORIES = ['Grocery', 'Egg', 'SharedBill'];
 const CATEGORY_LABELS = {
@@ -114,7 +115,7 @@ export default function ExpenseTracker() {
         {[
           { label: 'Grocery Total', value: money(groceryTotal), color: '#6366f1' },
           { label: 'Egg Total', value: money(eggTotal), color: '#f59e0b' },
-          { label: 'Eggs Bought', value: `${eggQtyTotal} pcs`, color: '#ec4899' },
+          { label: 'Eggs Bought', value: `${formatCount(eggQtyTotal)} pcs`, color: '#ec4899' },
           { label: 'Shared Bills', value: money(sharedBillTotal), color: '#22c55e' },
           { label: 'Water Supply', value: money(waterTotal), color: '#38bdf8' },
         ].map(({ label, value, color }) => (
@@ -350,7 +351,7 @@ export default function ExpenseTracker() {
                       </span>
                     </td>
                     <td style={{ padding: '10px 14px', color: '#34d399', fontWeight: 700 }}>{money(exp.amount)}</td>
-                    <td style={{ padding: '10px 14px', color: '#fbbf24' }}>{exp.eggQty ? `${exp.eggQty} pcs` : '-'}</td>
+                    <td style={{ padding: '10px 14px', color: '#fbbf24' }}>{exp.eggQty ? `${formatCount(exp.eggQty)} pcs` : '-'}</td>
                     <td style={{ padding: '10px 14px', color: '#6b7280', fontSize: 12 }}>{new Date(exp.createdAt).toLocaleDateString()}</td>
                     <td style={{ padding: '10px 14px' }}>
                       <button onClick={() => handleDelete(exp._id)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>

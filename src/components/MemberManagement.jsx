@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { Copy, Check } from 'lucide-react';
 import { useHome } from '../context/HomeContext';
 import { homeApi } from '../api';
+import { formatCount } from '../utils/numberFormat';
 
 export default function MemberManagement() {
   const { members, currentHome, meals } = useHome();
@@ -123,11 +124,11 @@ export default function MemberManagement() {
                 <div className="grid grid-cols-2 gap-3 sm:col-span-2">
                   <div className="rounded-lg border border-white/10 bg-white/5 px-4 py-3">
                     <p className="text-xs font-semibold uppercase text-gray-400">Meals Consumed</p>
-                    <p className="mt-1 text-xl font-bold text-white">{usage.meals}</p>
+                    <p className="mt-1 text-xl font-bold text-white">{formatCount(usage.meals)}</p>
                   </div>
                   <div className="rounded-lg border border-white/10 bg-white/5 px-4 py-3">
                     <p className="text-xs font-semibold uppercase text-gray-400">Eggs Consumed</p>
-                    <p className="mt-1 text-xl font-bold text-white">{usage.eggs}</p>
+                    <p className="mt-1 text-xl font-bold text-white">{formatCount(usage.eggs)}</p>
                   </div>
                 </div>
               </div>
