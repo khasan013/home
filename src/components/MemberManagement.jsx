@@ -125,21 +125,21 @@ export default function MemberManagement() {
               const billEntry = latestBill?.breakdown?.find(item => String(item.userId) === String(memberId));
               const excludedWaterUsers = new Set((currentHome?.waterBillExcludedUsers || []).map(user => String(user?._id || user)));
               const billWaterExpenses = (expenses || []).filter(expense => {
-                if (expense.category !== 'WaterSupply' || expense.splitEqually === false) return false;
+                if (expense.category !== 'WaterSupply') return false;
                 const expenseDate = new Date(expense.createdAt || expense.date);
                 const start = latestBill?.periodStart ? new Date(latestBill.periodStart) : null;
                 const end = latestBill?.periodEnd ? new Date(latestBill.periodEnd) : null;
                 return start && end && !Number.isNaN(expenseDate.getTime()) && expenseDate >= start && expenseDate < end;
               }).reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
-              const billWaterCost = Number(latestBill?.waterCost ?? latestBill?.costSummary?.water ?? 0) || billWaterExpenses;
+              const recordedBillWaterCost = Number(latestBill?.waterCost ?? latestBill?.costSummary?.water ?? 0);
+              const billWaterCost = billWaterExpenses || recordedBillWaterCost;
               const eligibleMembers = members.filter(homeMember => {
                 const userId = homeMember.user?._id || homeMember.user?.id || homeMember.user;
                 return userId && !excludedWaterUsers.has(String(userId));
               }).length;
-              const storedWaterShare = Number(billEntry?.waterShare || 0);
-              const waterShare = storedWaterShare || (excludedWaterUsers.has(String(memberId)) || !eligibleMembers
+              const waterShare = excludedWaterUsers.has(String(memberId)) || !eligibleMembers
                 ? 0
-                : billWaterCost / eligibleMembers);
+                : billWaterCost / eligibleMembers;
 
               return (
               <div key={member._id || memberId} className="bg-white/5 border border-white/10 rounded-lg p-4 flex flex-col gap-4">
