@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Plus, Trash2, BarChart3, Drumstick, Egg, Soup, Carrot, Utensils, CalendarDays, Check } from 'lucide-react';
+import { Plus, Trash2, BarChart3, Drumstick, Egg, Soup, Carrot, Utensils, Check } from 'lucide-react';
 import { useHome } from '../context/HomeContext';
 import { mealApi } from '../api';
 
@@ -195,8 +195,8 @@ export default function MealTracking() {
       {showForm && (
         <form onSubmit={handleSubmit} className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
           <div className="space-y-4 rounded-2xl border border-slate-800/90 bg-gradient-to-br from-slate-950 via-slate-950 to-indigo-950/40 p-4 shadow-xl shadow-black/20 sm:p-6">
-            <label className="block max-w-sm text-sm font-medium text-slate-300">Date<div className="relative mt-1.5"><input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full rounded-xl border border-slate-700 bg-slate-900/90 px-4 py-3 pr-10 text-white outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 [color-scheme:dark]" required /><CalendarDays className="pointer-events-none absolute right-3 top-3.5 h-5 w-5 text-slate-400" /></div></label>
-            <div className="grid gap-3 md:grid-cols-3">{sectionRows.slice(0, 3).map(row => <ItemCard key={row.key} row={row} quantities={quantities} setQuantities={setQuantities} />)}</div>
+            <label className="block max-w-sm text-sm font-medium text-slate-300">Date<div className="relative mt-1.5"><input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full rounded-xl border border-slate-700 bg-slate-900/90 px-4 py-3 text-white outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 [color-scheme:dark]" required /></div></label>
+            <div className="grid gap-3 lg:grid-cols-3">{sectionRows.slice(0, 3).map(row => <ItemCard key={row.key} row={row} quantities={quantities} setQuantities={setQuantities} />)}</div>
             <div className="grid gap-3 rounded-2xl border border-slate-800 bg-slate-900/35 p-3 md:grid-cols-[minmax(0,1fr)_1px_minmax(0,1fr)]">
               <ItemCard row={sectionRows[3]} quantities={quantities} setQuantities={setQuantities} presets={[0.05, 0.1, 0.15]} />
               <div className="hidden bg-slate-700/70 md:block" />
@@ -301,13 +301,15 @@ function ItemCard({ row, quantities, percentages, setQuantities, setPercentages,
   const setPercent = value => setPercentages(previous => ({ ...previous, [row.key]: Math.min(100, Math.max(0, Number(value) || 0)) }));
   const selected = Number(quantities[row.key]) > 0;
   const optional = !presets;
-  return <div className={`flex min-w-0 items-center justify-between gap-2 rounded-2xl border p-3 transition duration-200 ${selected ? 'border-violet-500/80 bg-violet-500/[0.08] shadow-lg shadow-violet-950/10' : 'border-slate-800 bg-slate-900/35 hover:border-slate-700'}`}>
+  return <div className={`flex min-w-0 flex-col gap-3 rounded-2xl border p-3 transition duration-200 sm:p-3.5 ${selected ? 'border-violet-500/80 bg-gradient-to-br from-violet-500/[0.10] to-fuchsia-500/[0.04] shadow-lg shadow-violet-950/10' : 'border-slate-800 bg-slate-900/35 hover:border-slate-700'}`}>
     <div className="flex min-w-0 items-center gap-2.5">
-      {optional && <button type="button" role="checkbox" aria-checked={selected} aria-label={`Select ${row.label}`} onClick={() => setQuantity(selected ? 0 : 1)} className={`grid h-6 w-6 shrink-0 place-items-center rounded-md border transition ${selected ? 'border-violet-400 bg-violet-500 text-white shadow-md shadow-violet-950/40' : 'border-slate-600 bg-slate-950 text-transparent hover:border-violet-400'}`}><Check className="h-4 w-4" /></button>}
-      <Icon className={`h-8 w-8 shrink-0 ${row.color}`} />
-      <div className="min-w-0"><div className="truncate text-sm font-semibold">{row.label}</div>{customPercent ? <label className="text-xs text-slate-400">Percentage <input aria-label={`${row.label} percentage`} type="number" min="0" max="100" disabled={!selected} value={percentages[row.key]} onChange={event => setPercent(event.target.value)} className="w-12 border-b border-slate-600 bg-transparent text-center text-white disabled:opacity-40" />%</label> : <span className="text-xs text-slate-400">{row.percent}%</span>}</div>
+      {optional && <button type="button" role="checkbox" aria-checked={selected} aria-label={`Select ${row.label}`} onClick={() => setQuantity(selected ? 0 : 1)} className={`grid h-6 w-6 shrink-0 place-items-center rounded-md border transition ${selected ? 'border-violet-400 bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white shadow-md shadow-violet-950/40' : 'border-slate-600 bg-slate-950 text-transparent hover:border-violet-400'}`}><Check className="h-4 w-4" /></button>}
+      <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-white/10 bg-gradient-to-br from-white/[0.09] to-white/[0.02] shadow-inner ${row.color}`}><Icon className="h-6 w-6" strokeWidth={2.1} /></span>
+      <div className="min-w-0 flex-1"><div className="truncate text-sm font-semibold text-slate-100">{row.label}</div>{customPercent ? <label className="mt-0.5 inline-flex items-center gap-1 text-xs text-slate-400">Section <input aria-label={`${row.label} percentage`} type="number" min="0" max="100" disabled={!selected} value={percentages[row.key]} onChange={event => setPercent(event.target.value)} className="w-10 border-b border-slate-600 bg-transparent text-center text-white disabled:opacity-40" />%</label> : <span className="text-xs text-slate-400">{row.percent}% share</span>}</div>
     </div>
-    {presets ? <div className="flex shrink-0 gap-1">{presets.map(value => <button type="button" key={value} aria-pressed={Number(quantities[row.key]) === value} onClick={() => setQuantity(Number(quantities[row.key]) === value ? 0 : value)} className={`rounded-full border px-2.5 py-2 text-xs transition ${Number(quantities[row.key]) === value ? 'border-violet-400 bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white shadow-md shadow-violet-950/30' : 'border-slate-700 bg-slate-900 text-slate-300 hover:border-violet-500/60'}`}>{value}</button>)}</div> : <QuantityStepper value={quantities[row.key]} onChange={setQuantity} disabled={!selected} />}
+    <div className={`flex min-h-10 items-center ${presets ? 'justify-start' : 'justify-end'}`}>
+      {presets ? <div className="flex flex-wrap gap-1.5">{presets.map(value => <button type="button" key={value} aria-pressed={Number(quantities[row.key]) === value} onClick={() => setQuantity(Number(quantities[row.key]) === value ? 0 : value)} className={`min-w-[48px] rounded-full border px-2.5 py-2 text-xs transition duration-150 ${Number(quantities[row.key]) === value ? 'border-violet-400 bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white shadow-md shadow-violet-950/30' : 'border-slate-700 bg-slate-900 text-slate-300 hover:border-violet-500/60 hover:text-white'}`}>{value}</button>)}</div> : <QuantityStepper value={quantities[row.key]} onChange={setQuantity} disabled={!selected} />}
+    </div>
   </div>;
 }
 
