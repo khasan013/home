@@ -154,6 +154,9 @@ export const adminApi = {
   setWaterBottlePrice: (homeId, waterBottlePrice) =>
     request('PUT', `/admin/${homeId}/water-bottle-price`, { waterBottlePrice }),
 
+  setWaterBillExclusions: (homeId, excludedUserIds) =>
+    request('PUT', `/admin/${homeId}/water-bill-exclusions`, { excludedUserIds }),
+
   // Members
   getMembers: (homeId) =>
     request('GET', `/admin/${homeId}/members`),

@@ -104,6 +104,9 @@ export default function AdminDashboard() {
   const [busy,      setBusy]      = useState('');
   const [toast,     setToast]     = useState(null);
   const [waterBottlePrice, setWaterBottlePrice] = useState(String(currentHome?.waterBottlePrice || ''));
+  const [excludedWaterUserIds, setExcludedWaterUserIds] = useState(() =>
+    (currentHome?.waterBillExcludedUsers || []).map(user => String(user?._id || user))
+  );
 
   // penalty form
   const [penForm, setPenForm] = useState({ userId: '', meals: '', reason: '' });
@@ -220,6 +223,10 @@ export default function AdminDashboard() {
     setWaterBottlePrice(currentHome?.waterBottlePrice ? String(currentHome.waterBottlePrice) : '');
   }, [homeId, currentHome?.waterBottlePrice]);
 
+  useEffect(() => {
+    setExcludedWaterUserIds((currentHome?.waterBillExcludedUsers || []).map(user => String(user?._id || user)));
+  }, [homeId, currentHome?.waterBillExcludedUsers]);
+
   const handleSaveWaterBottlePrice = async event => {
     event.preventDefault();
     const price = Number(waterBottlePrice);
@@ -238,6 +245,24 @@ export default function AdminDashboard() {
       toast$('Water bottle price saved.');
     } catch (error) {
       toast$(error.message || 'Could not save water bottle price.', 'error');
+    } finally {
+      setBusy('');
+    }
+  };
+
+  const handleSaveWaterBillExclusions = async () => {
+    setBusy('water-exclusions');
+    try {
+      const result = await adminApi.setWaterBillExclusions(homeId, excludedWaterUserIds);
+      const ids = result.excludedUserIds || [];
+      setExcludedWaterUserIds(ids);
+      setCurrentHome(previous => previous ? { ...previous, waterBillExcludedUsers: ids } : previous);
+      setHomes(previous => previous.map(home => home._id === homeId
+        ? { ...home, waterBillExcludedUsers: ids }
+        : home));
+      toast$('Water bill recipients saved.');
+    } catch (error) {
+      toast$(error.message || 'Could not save water bill recipients.', 'error');
     } finally {
       setBusy('');
     }
@@ -588,6 +613,29 @@ const handleSendBill = async (e) => {
         </form>
       </Card>
 
+      <Card title="🚰 Water Bill Recipients" accent="#0ea5e9">
+        <p style={{ color: '#9ca3af', fontSize: 12, marginTop: 0, marginBottom: 14 }}>
+          Select members who should be excluded from water-supply charges. They will still receive their regular meal bill.
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(220px,100%),1fr))', gap: 8, marginBottom: 14 }}>
+          {members.map(member => {
+            const user = member.user;
+            const userId = String(user?._id || '');
+            if (!userId) return null;
+            const checked = excludedWaterUserIds.includes(userId);
+            const name = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'Member';
+            return <label key={userId} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, border: `1px solid ${checked ? '#38bdf880' : '#334155'}`, background: checked ? '#0c4a6e30' : '#0f172a80', color: '#e2e8f0', cursor: 'pointer' }}>
+              <input type="checkbox" checked={checked} onChange={() => setExcludedWaterUserIds(previous => checked ? previous.filter(id => id !== userId) : [...previous, userId])} />
+              <span style={{ minWidth: 0 }}><strong style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</strong><small style={{ color: '#94a3b8' }}>{checked ? 'Excluded from water charge' : 'Included in water charge'}</small></span>
+            </label>;
+          })}
+        </div>
+        <button type="button" style={btn('#0ea5e9')} disabled={busy === 'water-exclusions'} onClick={handleSaveWaterBillExclusions}>
+          {busy === 'water-exclusions' ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <CheckCircle2 size={14} />}
+          {busy === 'water-exclusions' ? 'Saving…' : 'Save Water Bill Settings'}
+        </button>
+      </Card>
+
       {/* ── COST & BILL ── */}
       <Card title="💰 Cost Calculation & Send Bills" accent="#22c55e">
         <p style={{ color: '#9ca3af', fontSize: 12, marginTop: 0, marginBottom: 12 }}>
@@ -673,18 +721,19 @@ const handleSendBill = async (e) => {
         ) : (
           <table>
             <thead>
-              <tr><th>Month</th><th>Total</th><th>Per Meal</th><th>Everyone's Bill</th><th>Delivery</th><th>Date</th></tr>
+              <tr><th>Month</th><th>Total</th><th>Water Cost</th><th>Per Meal</th><th>Everyone's Bill</th><th>Delivery</th><th>Date</th></tr>
             </thead>
             <tbody>
               {bills.map(bill => (
                 <tr key={bill._id}>
                   <td style={{ fontWeight: 700 }}>{bill.month}</td>
                   <td>৳{Number(bill.totalBill || 0).toFixed(2)}</td>
+                  <td>৳{Number(bill.waterCost || 0).toFixed(2)}</td>
                   <td>৳{Number(bill.perMeal || 0).toFixed(2)}</td>
                   <td style={{ color: '#cbd5e1', fontSize: 12 }}>
                     {(bill.breakdown || []).map(member => (
                       <div key={member.userId || member.email || member.name}>
-                        {member.name || member.email}: ৳{Number(member.share || 0).toFixed(2)}
+                        {member.name || member.email}: ৳{Number(member.share || 0).toFixed(2)} (water ৳{Number(member.waterShare || 0).toFixed(2)})
                       </div>
                     ))}
                   </td>
