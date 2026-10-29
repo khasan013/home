@@ -1,12 +1,13 @@
 // src/components/MainApp.jsx - Mobile Responsive with Search to Join Home
 import { useState, useEffect } from 'react';
-import { Home, LogOut, Users, TrendingUp, Settings, ChevronDown, Plus, AlertCircle, Menu, X, Search, Loader, Megaphone, Phone } from 'lucide-react';
+import { Home, LogOut, Users, TrendingUp, Settings, ChevronDown, Plus, AlertCircle, Menu, X, Search, Loader, Megaphone, Phone, Droplets } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useHome } from '../context/HomeContext';
 import { homeApi } from '../api';
 import HomeDashboard from './HomeDashboard';
 import NoticeBoard from './NoticeBoard';
 import EmergencyContacts from './EmergencyContacts';
+import WaterSupply from './WaterSupply';
 
 // ── CRITICAL FIX: SidebarContent must be defined OUTSIDE MainApp ──
 // When defined inside, React treats it as a brand-new component type on every
@@ -28,6 +29,7 @@ function SidebarContent({
   const navItems = [
     { icon: Home,       label: 'Dashboard' },
     { icon: TrendingUp, label: 'Analytics' },
+    { icon: Droplets,   label: 'Water Supply' },
     { icon: Users,      label: 'Members'   },
     { icon: Megaphone,  label: 'Notice Board' },
     { icon: Phone,      label: 'Emergency Contacts' },
@@ -377,6 +379,8 @@ export default function MainApp() {
               <NoticeBoard />
             ) : activeNav === 'Emergency Contacts' ? (
               <EmergencyContacts />
+            ) : activeNav === 'Water Supply' ? (
+              <WaterSupply />
             ) : (
               <HomeDashboard key={activeNav} activeNav={activeNav} />
             )
