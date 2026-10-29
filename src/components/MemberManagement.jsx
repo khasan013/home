@@ -1,12 +1,15 @@
 // src/components/MemberManagement.jsx
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Copy, Check } from 'lucide-react';
 import { useHome } from '../context/HomeContext';
-import { homeApi } from '../api';
+import { adminApi, homeApi } from '../api';
 import { formatCount } from '../utils/numberFormat';
+
+const money = value => `৳${Number(value || 0).toFixed(2)}`;
 
 export default function MemberManagement() {
   const { members, currentHome, meals } = useHome();
+  const [latestBill, setLatestBill] = useState(null);
   const [copied,     setCopied]     = useState(false);
   const [joinCode,   setJoinCode]   = useState('');
   const [joinError,  setJoinError]  = useState('');
@@ -14,6 +17,20 @@ export default function MemberManagement() {
   const [joinSuccess,setJoinSuccess]= useState('');
 
   const inviteCode = currentHome?.inviteCode || '—';
+
+  useEffect(() => {
+    const homeId = currentHome?._id;
+    if (!homeId) {
+      setLatestBill(null);
+      return;
+    }
+    adminApi.getBills(homeId)
+      .then(bills => setLatestBill(Array.isArray(bills) ? bills[0] || null : null))
+      .catch(error => {
+        console.error('Failed to load latest member bill:', error);
+        setLatestBill(null);
+      });
+  }, [currentHome?._id]);
 
   const memberUsage = useMemo(() => {
     return meals.reduce((totals, meal) => {
@@ -105,6 +122,7 @@ export default function MemberManagement() {
             members.map((member) => {
               const memberId = member.user?._id || member.user?.id || member.user;
               const usage = memberUsage[String(memberId)] || { meals: 0, eggs: 0 };
+              const billEntry = latestBill?.breakdown?.find(item => String(item.userId) === String(memberId));
 
               return (
               <div key={member._id || memberId} className="bg-white/5 border border-white/10 rounded-lg p-4 flex flex-col gap-4">
@@ -130,6 +148,16 @@ export default function MemberManagement() {
                     <p className="text-xs font-semibold uppercase text-gray-400">Eggs Consumed</p>
                     <p className="mt-1 text-xl font-bold text-white">{formatCount(usage.eggs)}</p>
                   </div>
+                </div>
+                <div className="rounded-lg border border-sky-400/20 bg-slate-950/50 px-4 py-3 sm:col-span-2">
+                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-xs font-semibold uppercase text-sky-200">Latest bill</p>
+                    <span className="text-xs text-gray-400">{latestBill?.month || 'No bill sent yet'}</span>
+                  </div>
+                  {billEntry ? <div className="grid gap-2 sm:grid-cols-2">
+                    <div className="flex items-center justify-between gap-2 rounded-md bg-white/5 px-3 py-2"><span className="text-sm text-gray-300">Meal bill</span><strong className="text-white">{money(billEntry.share)}</strong></div>
+                    <div className="flex items-center justify-between gap-2 rounded-md border border-sky-400/20 bg-sky-400/5 px-3 py-2"><span className="text-sm font-semibold text-sky-200">Water supply bill</span><strong className="text-sky-100">{money(billEntry.waterShare)}</strong></div>
+                  </div> : <p className="text-sm text-gray-400">{latestBill ? 'No individual bill breakdown for this member.' : 'Bills will appear here after the first bill is sent.'}</p>}
                 </div>
               </div>
               );

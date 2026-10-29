@@ -176,7 +176,7 @@ export default function AdminDashboard() {
     const perEgg = totalEggCount > 0 ? totalEggPrice / totalEggCount : 0;
     const consumedCost = consumedEgg * perEgg;
     const remainingEggCost = totalEggPrice - consumedCost;
-    const totalBill = otherCost + remainingEggCost + consumedCost + sharedCost + waterCost;
+    const totalBill = otherCost + remainingEggCost + consumedCost + sharedCost;
 
     return {
       totalEggPrice,
@@ -539,6 +539,7 @@ const handleSendBill = async (e) => {
   const totalMeals      = meals.filter(m => !m.isPenalty).reduce((s, m) => s + m.mealCount, 0);
   const totalPenalty    = penalties.reduce((s, p) => s + (p.amount || 0), 0);
   const totalEggsConsumed = meals.filter(m => !m.isPenalty).reduce((s, m) => s + (m.eggsCount || 0), 0);
+  const totalWaterCost = expenses.filter(e => e.category === 'WaterSupply').reduce((sum, e) => sum + Number(e.amount || 0), 0);
 
   const inp = {
     background: '#1f2937', border: '1px solid #374151', borderRadius: 8,
@@ -590,6 +591,7 @@ const handleSendBill = async (e) => {
         <Stat label="Penalties"       value={penalties.length}  color="#f59e0b" />
         <Stat label="Penalty Meals"   value={`+${formatCount(totalPenalty)}`} color="#ef4444" />
         <Stat label="Eggs Consumed"   value={formatCount(totalEggsConsumed)} color="#f59e0b" />
+        <Stat label="Water Supply (Separate)" value={`৳${totalWaterCost.toFixed(2)}`} color="#38bdf8" />
       </div>
 
       <Card title="💧 Water Bottle Price" accent="#38bdf8">
@@ -685,13 +687,14 @@ const handleSendBill = async (e) => {
                 ['Consumed Egg Cost', `৳${billCalc.consumedCost.toFixed(2)}`],
                 ['Remaining Egg',     `৳${billCalc.remainingEggCost.toFixed(2)}`],
                 ['TOTAL BILL',        `৳${billCalc.totalBill.toFixed(2)}`],
+                ['Water Supply (separate)', `৳${billCalc.waterCost.toFixed(2)}`],
               ].map(([l, v], i) => (
                 <div key={l}>
-                  <div style={{ color: '#6b7280', fontSize: 11, textTransform: 'uppercase' }}>{l}</div>
+                  <div style={{ color: l === 'Water Supply (separate)' ? '#7dd3fc' : '#6b7280', fontSize: 11, textTransform: 'uppercase', fontWeight: l === 'Water Supply (separate)' ? 800 : 500 }}>{l}</div>
                   <div style={{
-                    color: i === 3 ? '#22c55e' : '#f1f5f9',
-                    fontSize: i === 3 ? 22 : 16,
-                    fontWeight: i === 3 ? 800 : 500,
+                    color: l === 'TOTAL BILL' ? '#22c55e' : l === 'Water Supply (separate)' ? '#7dd3fc' : '#f1f5f9',
+                    fontSize: l === 'TOTAL BILL' ? 22 : l === 'Water Supply (separate)' ? 20 : 16,
+                    fontWeight: l === 'TOTAL BILL' || l === 'Water Supply (separate)' ? 800 : 500,
                     marginTop: 2,
                   }}>{v}</div>
                 </div>
@@ -721,7 +724,7 @@ const handleSendBill = async (e) => {
         ) : (
           <table>
             <thead>
-              <tr><th>Month</th><th>Total</th><th>Water Cost</th><th>Per Meal</th><th>Everyone's Bill</th><th>Delivery</th><th>Date</th></tr>
+              <tr><th>Month</th><th>Meal Bill</th><th>Water Cost (Separate)</th><th>Per Meal</th><th>Everyone's Bill</th><th>Delivery</th><th>Date</th></tr>
             </thead>
             <tbody>
               {bills.map(bill => (
