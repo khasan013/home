@@ -6,12 +6,9 @@
 //     entry and does NOT affect the penalised user's meal count.
 //  2. Egg stats (totalEggPrice, totalEggCount, consumedEgg) are auto-filled from
 //     the home's expense & meal data.  Admin can still override any field.
-//  3. Bills are sent automatically on the 1st of every month at 00:01 AM
-//     (client-side scheduler — fires once when the dashboard is mounted if the
-//     current time is day-1 of the month and the auto-bill hasn't been sent yet
-//     this month).  Admin can still send manually any time.
+//  3. Bills are sent only when an admin explicitly submits the send-bill form.
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Trash2, Pencil, ShieldCheck, ShieldOff,
   AlertTriangle, Send, Loader2,
@@ -77,20 +74,6 @@ function Stat({ label, value, color = '#6366f1' }) {
   );
 }
 
-// ── Auto-bill scheduler ───────────────────────────────────
-// Returns ms until next 1st-of-month 00:01 AM local time.
-function msUntilMonthStart() {
-  const now  = new Date();
-  const next = new Date(now.getFullYear(), now.getMonth() + 1, 1, 0, 1, 0, 0);
-  return next - now;
-}
-
-// Storage key to avoid double-firing in same month
-function autoBillKey(homeId) {
-  const d = new Date();
-  return `autoBillSent_${homeId}_${d.getFullYear()}_${d.getMonth() + 1}`;
-}
-
 // ─────────────────────────────────────────────────────────
 export default function AdminDashboard() {
   const { currentHome, setCurrentHome, setHomes, expenses, setExpenses } = useHome();
@@ -121,8 +104,6 @@ export default function AdminDashboard() {
 
   // meal edit
   const [editMeal, setEditMeal] = useState(null);
-
-  const autoBillFiredRef = useRef(false);
 
   const toast$ = (msg, type = 'success') => setToast({ msg, type });
 
@@ -318,7 +299,7 @@ export default function AdminDashboard() {
   })();
 
  // ── Send bill ─────────────────────────────────────────
-const doSendBill = useCallback(async (auto = false) => {
+const doSendBill = useCallback(async () => {
   if (!homeId) return;
 
   setBusy('bill');
@@ -377,19 +358,12 @@ const doSendBill = useCallback(async (auto = false) => {
       setBills(prev => [result.bill, ...prev.filter(b => b._id !== result.bill._id)]);
     }
 
-    toast$(auto ? `Auto-bill queued for ${month}` : result.message);
-
-    if (!auto) {
-      setTimeout(() => {
-        adminApi.getBills(homeId)
-          .then(setBills)
-          .catch(console.error);
-      }, 5000);
-    }
-
-    if (auto) {
-      localStorage.setItem(autoBillKey(homeId), '1');
-    }
+    toast$(result.message);
+    setTimeout(() => {
+      adminApi.getBills(homeId)
+        .then(setBills)
+        .catch(console.error);
+    }, 5000);
 
   } catch (err) {
     const failedBill = err.data?.bill;
@@ -411,37 +385,8 @@ const handleSendBill = async (e) => {
     return toast$('Enter a bill cost first', 'error');
   }
 
-  doSendBill(false);
+  doSendBill();
 };
-  // ── Monthly auto-bill scheduler ───────────────────────
-  useEffect(() => {
-    if (!homeId || autoBillFiredRef.current) return;
-
-    const now = new Date();
-    // Check if it's the 1st of the month and not already sent
-    if (now.getDate() === 1 && !localStorage.getItem(autoBillKey(homeId))) {
-      // Wait until data is loaded and costForm has values, then fire
-      const tryAutoSend = () => {
-        if (billCalc && !autoBillFiredRef.current) {
-          autoBillFiredRef.current = true;
-          doSendBill(true);
-        }
-      };
-      // Give a small delay so costForm gets auto-filled first
-      const tid = setTimeout(tryAutoSend, 3000);
-      return () => clearTimeout(tid);
-    }
-
-    // Schedule for next month-start
-    const delay = msUntilMonthStart();
-    const tid   = setTimeout(() => {
-      if (!localStorage.getItem(autoBillKey(homeId)) && billCalc) {
-        autoBillFiredRef.current = true;
-        doSendBill(true);
-      }
-    }, delay);
-    return () => clearTimeout(tid);
-  }, [homeId, billCalc, doSendBill]);
 
   // ── Member actions ────────────────────────────────────
   const handlePromote = async (userId) => {
@@ -703,8 +648,7 @@ const handleSendBill = async (e) => {
           )}
 
           <p style={{ color: '#9ca3af', fontSize: 12, marginBottom: 12 }}>
-            Bills are also auto-sent every month on the <strong style={{ color: '#f1f5f9' }}>1st at 12:01 AM</strong>.
-            Click below to send manually any time.
+            Bills are sent when you click the button below.
           </p>
           <button style={btn('#22c55e')} type="submit" disabled={busy === 'bill' || !billCalc}>
             {busy === 'bill'
