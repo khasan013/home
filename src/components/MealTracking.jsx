@@ -7,9 +7,9 @@ import { formatCount } from '../utils/numberFormat';
 const initialQuantities = { meat: 0, vegetables: 0, egg: 0, rice: 0.1, vat: 0 };
 const initialPercentages = { meat: 75, vegetables: 10, egg: 50, rice: 100, vat: 100 };
 const itemMeta = [
-  { key: 'meat', label: 'Mash / Murgi', icon: Drumstick, color: 'text-orange-400' },
+  { key: 'meat', label: 'Mash / Murgi/Egg', icon: Drumstick, color: 'text-orange-400' },
   { key: 'vegetables', label: 'Vegi', icon: Carrot, color: 'text-emerald-400' },
-  { key: 'egg', label: 'Egg with Meal', icon: Egg, color: 'text-amber-300' },
+  { key: 'egg', label: 'Egg with Meal(Only Egg)', icon: Egg, color: 'text-amber-300' },
   { key: 'rice', label: 'Rice', icon: Soup, color: 'text-slate-100' },
   { key: 'vat', label: 'Vat (Custom)', icon: Utensils, color: 'text-violet-300' },
 ];
